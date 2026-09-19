@@ -1,0 +1,25 @@
+model User {
+  id           String          @id @default(uuid())
+  companyId    String
+  company      Company         @relation(fields: [companyId], references: [id])
+  email        String          @unique
+  name         String
+  role         UserRole
+  passwordHash String
+  isActive     Boolean         @default(true)
+  branchScope  BranchScopeType @default(SPECIFIC_BRANCHES)
+  branchId     String?
+  branch       Branch?         @relation(fields: [branchId], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  branchAccess          UserBranchAccess[]
+  createdDocuments      Document[]             @relation("DocCreatedBy")
+  createdPayments       Payment[]              @relation("PaymentCreatedBy")
+  inventoryTransactions InventoryTransaction[] @relation("InvTxCreatedBy")
+  documentLogs          DocumentLog[]          @relation("LogUser")
+  refreshTokens         RefreshToken[]
+  notifications         Notification[]         @relation("NotificationRecipient")
+
+  @@index([companyId])
+}

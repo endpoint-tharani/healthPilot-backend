@@ -1,0 +1,18 @@
+model Supplier {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  code        String
+  name        String
+  contactInfo String?
+  address     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  documents Document[]
+  payments  Payment[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}

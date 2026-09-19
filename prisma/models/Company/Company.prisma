@@ -1,0 +1,20 @@
+model Company {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches              Branch[]
+  users                 User[]
+  suppliers             Supplier[]
+  products              Product[]
+  batches               Batch[]
+  documents             Document[]
+  documentLinks         DocumentLink[]
+  inventoryTransactions InventoryTransaction[]
+  payments              Payment[]
+  documentLogs          DocumentLog[]
+  notifications         Notification[]
+}

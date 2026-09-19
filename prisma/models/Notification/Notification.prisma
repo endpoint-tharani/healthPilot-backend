@@ -1,0 +1,38 @@
+/// A user-facing alert that something relevant to this recipient happened.
+///
+/// Deliberately separate from DocumentLog: DocumentLog is the immutable audit
+/// trail of what happened to a document, this is the per-user inbox that says
+/// somebody needs to look. PostgreSQL is the source of truth; Socket.IO only
+/// delivers a copy to whoever happens to be connected.
+model Notification {
+  id              String                  @id @default(uuid())
+  companyId       String
+  company         Company                 @relation(fields: [companyId], references: [id])
+  recipientUserId String
+  recipient       User                    @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  type            NotificationType
+  title           String
+  message         String
+  severity        NotificationSeverity    @default(INFO)
+  entityType      NotificationEntityType?
+  entityId        String?
+  documentId      String?
+  document        Document?               @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  branchId        String?
+  branch          Branch?                 @relation(fields: [branchId], references: [id])
+
+  /// Deterministic identity of the business event for this recipient. The unique
+  /// index below is what makes notification creation idempotent: replaying the
+  /// same event inserts nothing rather than filling the bell with duplicates.
+  eventKey String
+
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([companyId, recipientUserId, eventKey])
+  @@index([recipientUserId, isRead])
+  @@index([recipientUserId, createdAt])
+  @@index([companyId])
+  @@index([documentId])
+}

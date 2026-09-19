@@ -1,0 +1,47 @@
+model Document {
+  id                   String         @id @default(uuid())
+  companyId            String
+  company              Company        @relation(fields: [companyId], references: [id])
+  branchId             String?
+  branch               Branch?        @relation("PrimaryBranchDocuments", fields: [branchId], references: [id])
+  sourceBranchId       String?
+  sourceBranch         Branch?        @relation("SourceBranchDocuments", fields: [sourceBranchId], references: [id])
+  destinationBranchId  String?
+  destinationBranch    Branch?        @relation("DestinationBranchDocuments", fields: [destinationBranchId], references: [id])
+  supplierId           String?
+  supplier             Supplier?      @relation(fields: [supplierId], references: [id])
+  documentNumber       String
+  documentType         DocumentType
+  status               DocumentStatus @default(DRAFT)
+  documentDate         DateTime       @default(now())
+  expectedDeliveryDate DateTime?
+  subtotal             Decimal        @default(0) @db.Decimal(12, 2)
+  taxAmount            Decimal        @default(0) @db.Decimal(12, 2)
+  totalAmount          Decimal        @default(0) @db.Decimal(12, 2)
+  paidAmount           Decimal        @default(0) @db.Decimal(12, 2)
+  balanceAmount        Decimal        @default(0) @db.Decimal(12, 2)
+  disputedAmount       Decimal        @default(0) @db.Decimal(12, 2)
+  notes                String?
+  supplierRef          String?
+  patientRef           String?
+  prescriptionRef      String?
+  createdById          String
+  createdBy            User           @relation("DocCreatedBy", fields: [createdById], references: [id])
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  lineItems             DocumentLineItem[]
+  sourceLinks           DocumentLink[]         @relation("SourceDocumentLinks")
+  targetLinks           DocumentLink[]         @relation("TargetDocumentLinks")
+  inventoryTransactions InventoryTransaction[]
+  paymentAllocations    PaymentAllocation[]
+  documentLogs          DocumentLog[]
+  notifications         Notification[]
+
+  @@unique([companyId, documentNumber])
+  @@index([companyId, documentType])
+  @@index([branchId])
+  @@index([sourceBranchId])
+  @@index([destinationBranchId])
+  @@index([status])
+}

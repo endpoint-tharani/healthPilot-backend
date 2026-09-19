@@ -1,0 +1,14 @@
+model DocumentLink {
+  id               String           @id @default(uuid())
+  companyId        String
+  company          Company          @relation(fields: [companyId], references: [id])
+  sourceDocumentId String
+  sourceDocument   Document         @relation("SourceDocumentLinks", fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  targetDocumentId String
+  targetDocument   Document         @relation("TargetDocumentLinks", fields: [targetDocumentId], references: [id], onDelete: Cascade)
+  linkType         DocumentLinkType
+  createdAt        DateTime         @default(now())
+
+  @@index([sourceDocumentId])
+  @@index([targetDocumentId])
+}

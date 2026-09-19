@@ -1,0 +1,16 @@
+model DocumentLog {
+  id         String   @id @default(uuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id])
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation("LogUser", fields: [userId], references: [id])
+  action     String
+  reason     String?
+  changes    String?
+  createdAt  DateTime @default(now())
+
+  @@index([documentId])
+  @@index([userId])
+}

@@ -1,0 +1,30 @@
+model DocumentLineItem {
+  id                  String   @id @default(uuid())
+  documentId          String
+  document            Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  lineNumber          Int
+  productId           String
+  product             Product  @relation(fields: [productId], references: [id])
+  batchId             String?
+  batch               Batch?   @relation(fields: [batchId], references: [id])
+  description         String?
+  quantity            Decimal  @db.Decimal(12, 2)
+  acceptedQuantity    Decimal? @db.Decimal(12, 2)
+  damagedQuantity     Decimal? @db.Decimal(12, 2)
+  missingQuantity     Decimal? @db.Decimal(12, 2)
+  unitPrice           Decimal  @db.Decimal(12, 2)
+  subtotal            Decimal  @db.Decimal(12, 2)
+  taxRate             Decimal  @db.Decimal(5, 2)
+  taxAmount           Decimal  @db.Decimal(12, 2)
+  total               Decimal  @db.Decimal(12, 2)
+  unitOfMeasure       String?
+  referenceLineItemId String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  inventoryTransactions InventoryTransaction[]
+
+  @@index([documentId])
+  @@index([productId])
+  @@index([batchId])
+}

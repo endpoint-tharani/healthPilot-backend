@@ -1,0 +1,19 @@
+model Batch {
+  id          String      @id @default(uuid())
+  companyId   String
+  company     Company     @relation(fields: [companyId], references: [id])
+  productId   String
+  product     Product     @relation(fields: [productId], references: [id])
+  batchNumber String
+  expiryDate  DateTime
+  status      StockStatus @default(USABLE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  lineItems             DocumentLineItem[]
+  inventoryTransactions InventoryTransaction[]
+
+  @@unique([productId, batchNumber])
+  @@index([productId])
+  @@index([companyId])
+}
