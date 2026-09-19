@@ -5,8 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate --schema=prisma && tsc",
     "start": "node dist/server.js",
+    "postinstall": "prisma generate --schema=prisma",
     "prisma:generate": "prisma generate --schema=prisma",
     "prisma:migrate": "prisma migrate dev --schema=prisma",
     "prisma:seed": "tsx src/scripts/seed.ts",
@@ -16,6 +17,7 @@
     "verify:internal-fulfilment": "tsx src/scripts/verifyInternalFulfilment.ts"
   },
   "prisma": {
+    "schema": "prisma",
     "seed": "tsx src/scripts/seed.ts"
   },
   "dependencies": {
