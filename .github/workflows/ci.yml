@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to the same branch cancels the run still in flight.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Prisma generate & TypeScript build
+    runs-on: ubuntu-latest
+
+    env:
+      # schema.prisma resolves the datasource url from env("DATABASE_URL"), so the
+      # variable has to exist. Neither `prisma validate` nor `prisma generate`
+      # opens a connection, so a placeholder is enough - no database is needed.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/healthpilot_ci
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Catches schema errors with a clear message before generate does.
+      - name: Validate Prisma schema
+        run: npx prisma validate --schema=prisma
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      # tsc only compiles once @prisma/client has real types, so this also
+      # proves the generate step above produced a usable client.
+      - name: Build
+        run: npm run build
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: dist
+          retention-days: 7
