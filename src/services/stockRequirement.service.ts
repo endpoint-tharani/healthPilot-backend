@@ -12,6 +12,7 @@ import {
   getDocumentDetail,
   listDocuments,
   loadDocumentForUpdate,
+  transitionDocumentStatus,
 } from './document.service';
 import { deliverNotifications, notifyingTransaction } from './notification.service';
 import {
@@ -28,6 +29,8 @@ export interface RequirementLineInput {
 
 export interface CreateRequirementInput {
   branchId: string;
+  /** Business date of the requisition. Defaults to now. */
+  documentDate?: Date;
   requiredDate: Date;
   reason: string;
   lines: RequirementLineInput[];
@@ -64,6 +67,7 @@ export async function createRequirement(auth: AuthContext, input: CreateRequirem
         documentNumber,
         documentType: DocumentType.STOCK_REQUIREMENT,
         status: DocumentStatus.DRAFT,
+        documentDate: input.documentDate ?? new Date(),
         expectedDeliveryDate: input.requiredDate,
         notes: input.reason,
         subtotal: totals.subtotal,
@@ -127,7 +131,7 @@ async function transition(
       await assertBranchAccess(auth, doc.branchId, tx);
     }
 
-    await tx.document.update({ where: { id }, data: { status: nextStatus } });
+    await transitionDocumentStatus(tx, doc, allowedFrom, nextStatus, operation);
     await logDocumentAction(tx, {
       companyId: auth.companyId,
       documentId: id,
@@ -259,7 +263,13 @@ export async function updateFulfilment(
     where: { documentId: requirementId, action: AuditAction.FULFILMENT_UPDATED },
   });
 
-  await tx.document.update({ where: { id: requirementId }, data: { status: nextStatus } });
+  await transitionDocumentStatus(
+    tx,
+    requirement,
+    [requirement.status],
+    nextStatus,
+    'update fulfilment on'
+  );
   await logDocumentAction(tx, {
     companyId: auth.companyId,
     documentId: requirementId,
@@ -311,6 +321,13 @@ function fulfilmentTotals(
   return { requested, received, remaining: requested.minus(received) };
 }
 
+/**
+ * Requisitions carry a line summary, which the other registers do not: choosing
+ * the right one - in a picker, or in a list of dozens - is a question about the
+ * product and the quantity, and the header alone cannot answer it.
+ */
 export function listRequirements(auth: AuthContext, filters: DocumentListFilters) {
-  return listDocuments(auth, DocumentType.STOCK_REQUIREMENT, filters);
+  return listDocuments(auth, DocumentType.STOCK_REQUIREMENT, filters, {
+    includeLineSummary: true,
+  });
 }

@@ -18,6 +18,7 @@ import {
   linkDocuments,
   listDocuments,
   loadDocumentForUpdate,
+  transitionDocumentStatus,
 } from './document.service';
 import { getRemainingRequirementByProduct } from './fulfilment.service';
 import { deliverNotifications, notifyingTransaction } from './notification.service';
@@ -38,6 +39,8 @@ export interface CreatePurchaseOrderInput {
   requirementId: string;
   supplierId: string;
   deliveryBranchId: string;
+  /** Business date of the order. Defaults to now. */
+  documentDate?: Date;
   expectedDeliveryDate: Date;
   notes?: string;
   lines: PurchaseOrderLineInput[];
@@ -183,6 +186,7 @@ export async function createPurchaseOrder(auth: AuthContext, input: CreatePurcha
         documentNumber,
         documentType: DocumentType.PURCHASE_ORDER,
         status: DocumentStatus.DRAFT,
+        documentDate: input.documentDate ?? new Date(),
         expectedDeliveryDate: input.expectedDeliveryDate,
         notes: input.notes,
         subtotal: totals.subtotal,
@@ -244,7 +248,13 @@ export async function approvePurchaseOrder(auth: AuthContext, id: string, reason
     const doc = await loadDocumentForUpdate(tx, auth, id, DocumentType.PURCHASE_ORDER);
     assertStatus(doc, [DocumentStatus.DRAFT, DocumentStatus.SUBMITTED], 'approve');
 
-    await tx.document.update({ where: { id }, data: { status: DocumentStatus.APPROVED } });
+    await transitionDocumentStatus(
+      tx,
+      doc,
+      [DocumentStatus.DRAFT, DocumentStatus.SUBMITTED],
+      DocumentStatus.APPROVED,
+      'approve'
+    );
     await logDocumentAction(tx, {
       companyId: auth.companyId,
       documentId: id,
@@ -280,7 +290,13 @@ export async function cancelPurchaseOrder(auth: AuthContext, id: string, reason:
       throw conflict('Cannot cancel a purchase order that already has goods receipts');
     }
 
-    await tx.document.update({ where: { id }, data: { status: DocumentStatus.CANCELLED } });
+    await transitionDocumentStatus(
+      tx,
+      doc,
+      [DocumentStatus.DRAFT, DocumentStatus.SUBMITTED, DocumentStatus.APPROVED],
+      DocumentStatus.CANCELLED,
+      'cancel'
+    );
     await logDocumentAction(tx, {
       companyId: auth.companyId,
       documentId: id,

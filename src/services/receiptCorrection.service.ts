@@ -18,9 +18,11 @@ import {
   getDocumentDetail,
   linkDocuments,
   listDocuments,
+  transitionDocumentStatus,
 } from './document.service';
 import { StockMovementInput, recordStockMovements } from './inventory.service';
 import { propagateFulfilment } from './goodsReceipt.service';
+import { recomputeInvoiceDisputes } from './supplierInvoice.service';
 import { deliverNotifications, notifyingTransaction } from './notification.service';
 import { notifyReceiptCorrected } from './notificationEvents.service';
 
@@ -33,6 +35,8 @@ export interface CorrectionLineInput {
 
 export interface CreateCorrectionInput {
   goodsReceiptId: string;
+  /** Business date of the correction. Defaults to now. */
+  documentDate?: Date;
   reason: string;
   lines: CorrectionLineInput[];
 }
@@ -113,6 +117,19 @@ export async function createReceiptCorrection(auth: AuthContext, input: CreateCo
   }
 
   const documentId = await notifyingTransaction(async (tx) => {
+    /**
+     * Corrections of one receipt are serialised before anything is read.
+     *
+     * A correction is computed as a delta against the receipt's CURRENT effective
+     * position, so two of them running at once would each measure against the
+     * same pre-correction figures and both post their deltas - moving the stock
+     * twice. The conditional status update below cannot catch that on its own,
+     * because a second correction of an already-CORRECTED receipt is legitimate.
+     * This is the same advisory-lock idiom the requirement cap and the stock
+     * ledger already use, and it releases with the transaction.
+     */
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'goods-receipt:' + input.goodsReceiptId}))`;
+
     const receipt = await tx.document.findUnique({
       where: { id: input.goodsReceiptId },
       include: { lineItems: true },
@@ -194,6 +211,7 @@ export async function createReceiptCorrection(auth: AuthContext, input: CreateCo
         documentNumber,
         documentType: DocumentType.RECEIPT_CORRECTION,
         status: DocumentStatus.POSTED,
+        documentDate: input.documentDate ?? new Date(),
         supplierRef: receipt.supplierRef,
         notes: input.reason,
         createdById: auth.userId,
@@ -233,6 +251,7 @@ export async function createReceiptCorrection(auth: AuthContext, input: CreateCo
     });
 
     const movements: StockMovementInput[] = [];
+    const transactionDate = correction.documentDate;
     for (const [index, p] of prepared.entries()) {
       const correctionLine = correction.lineItems[index];
       if (!p.receiptLine.batchId) {
@@ -252,6 +271,7 @@ export async function createReceiptCorrection(auth: AuthContext, input: CreateCo
           unitCost: p.receiptLine.unitPrice,
           stockStatus: StockStatus.USABLE,
           createdById: auth.userId,
+          transactionDate,
           notes: 'Correction of ' + receipt.documentNumber,
         });
       }
@@ -269,6 +289,7 @@ export async function createReceiptCorrection(auth: AuthContext, input: CreateCo
           unitCost: p.receiptLine.unitPrice,
           stockStatus: StockStatus.DAMAGED,
           createdById: auth.userId,
+          transactionDate,
           notes: 'Correction of ' + receipt.documentNumber,
         });
       }
@@ -284,10 +305,15 @@ export async function createReceiptCorrection(auth: AuthContext, input: CreateCo
       DocumentLinkType.CORRECTS
     );
 
-    await tx.document.update({
-      where: { id: receipt.id },
-      data: { status: DocumentStatus.CORRECTED },
-    });
+    // The receipt must still be in one of the states this correction was computed
+    // against; a concurrent correction of the same receipt is refused here.
+    await transitionDocumentStatus(
+      tx,
+      receipt,
+      correctable,
+      DocumentStatus.CORRECTED,
+      'correct'
+    );
 
     await logDocumentAction(tx, {
       companyId: auth.companyId,
@@ -336,7 +362,14 @@ export async function createReceiptCorrection(auth: AuthContext, input: CreateCo
 
     // The correction changes the accepted quantity, so requirement fulfilment is
     // re-derived from the corrected stock position.
-    await propagateFulfilment(tx, auth, receipt.id);
+    const purchaseOrder = await propagateFulfilment(tx, auth, receipt.id);
+
+    // And so is anything the supplier has already billed for this order. A
+    // correction raised after invoicing must move the disputed amount, or the
+    // invoice goes on claiming payment for goods that are no longer there.
+    if (purchaseOrder) {
+      await recomputeInvoiceDisputes(tx, auth, purchaseOrder.id);
+    }
 
     // The before and after are the same per-line figures the deltas above were
     // computed from, summed for display only.

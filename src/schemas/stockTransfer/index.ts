@@ -5,6 +5,8 @@ export const createTransferSchema = z
   .object({
     sourceBranchId: uuid,
     destinationBranchId: uuid,
+    /** Business date the transfer is raised on. Defaults to now. */
+    documentDate: isoDate.optional(),
     expectedDate: isoDate.optional(),
     notes: z.string().trim().max(500).optional(),
     /** Optional: the stock requirement this transfer is raised to help fulfil. */

@@ -118,8 +118,16 @@ async function main() {
   }
 
   // A clean slate so counts in this run are unambiguous. Only notifications are
-  // touched; no business data is removed.
-  await prisma.notification.deleteMany({});
+  // touched, no business data is removed - and only the two demo tenants this
+  // harness signs in as, so a tenant that happens to share the database keeps
+  // its inbox.
+  const demoCompanies = await prisma.company.findMany({
+    where: { code: { in: ['COMP-HEALTHPILOT', 'COMP-OTHERCARE'] } },
+    select: { id: true },
+  });
+  await prisma.notification.deleteMany({
+    where: { companyId: { in: demoCompanies.map((company) => company.id) } },
+  });
 
   /* ------------------------------------------------------------ sessions -- */
   const admin = await login('admin@healthpilot.ai');
@@ -300,11 +308,15 @@ async function main() {
     typesFor(admin).includes('GOODS_RECEIPT_POSTED'),
     typesFor(admin)
   );
+  /**
+   * The delivery landed in the central warehouse, and the requisition belongs to
+   * Branch A. Nothing has reached the branch that asked, so nothing is fulfilled
+   * and the branch is told nothing about fulfilment - it is told when the stock
+   * actually arrives, at STEP 8.
+   */
   check(
-    '11. 100/100 accepted fulfils the requirement',
-    branchA.received.some(
-      (e) => e.type === 'STOCK_REQUIREMENT_FULFILLED' && e.message.includes('100/100 units')
-    ),
+    '11. A delivery into central does not fulfil the branch requisition',
+    !branchA.received.some((e) => e.type === 'STOCK_REQUIREMENT_FULFILLED'),
     branchA.received.filter((e) => e.type.startsWith('STOCK_REQUIREMENT')).map((e) => e.message)
   );
 
@@ -341,17 +353,21 @@ async function main() {
     corrected?.message
   );
 
-  /* ============================ STEP 5: partial =========================== */
-  const partial = branchA.received.find(
-    (e) => e.type === 'STOCK_REQUIREMENT_PARTIALLY_FULFILLED'
-  );
-  check('13. STEP 5 - requirement drops to partially fulfilled', Boolean(partial));
+  /* ============================ STEP 5: still nothing at the branch ======= */
+  /**
+   * The correction restated what is usable in the central warehouse. The branch
+   * still has not received a single vial, so its requisition has not moved and
+   * there is nothing to tell it about.
+   */
   check(
-    '13b. Partial message reports 70/100 with 30 remaining',
-    Boolean(
-      partial && partial.message.includes('70/100 units') && partial.message.includes('30 remaining')
-    ),
-    partial?.message
+    '13. STEP 5 - a correction at central still does not move the branch requisition',
+    !branchA.received.some((e) => e.type.startsWith('STOCK_REQUIREMENT_PARTIALLY')),
+    typesFor(branchA)
+  );
+  check(
+    '13b. Nor does it claim the requisition is fulfilled',
+    !branchA.received.some((e) => e.type === 'STOCK_REQUIREMENT_FULFILLED'),
+    typesFor(branchA)
   );
 
   /* ==================== STEPS 6-7: follow-up order and fulfilment ========= */
@@ -398,14 +414,14 @@ async function main() {
     (e) => e.type === 'STOCK_REQUIREMENT_FULFILLED'
   );
   check(
-    '14. STEP 7 - the requirement is notified as fulfilled a second time',
-    fulfilledEvents.length === 2,
+    '14. STEP 7 - a second delivery into central still fulfils nothing at the branch',
+    fulfilledEvents.length === 0,
     fulfilledEvents.map((e) => e.message)
   );
   check(
-    '14b. The second fulfilment also reports 100/100',
-    fulfilledEvents.every((e) => e.message.includes('100/100 units')),
-    fulfilledEvents.map((e) => e.message)
+    '14b. 130 vials now sit at central and the branch is still owed all 100',
+    !branchA.received.some((e) => e.type.startsWith('STOCK_REQUIREMENT_PARTIALLY')),
+    typesFor(branchA)
   );
 
   /* ============================ invoice, credit note, payment ============= */
@@ -470,9 +486,13 @@ async function main() {
   );
   check('18. Central warehouse holds transferable usable stock', Boolean(usable), stock);
 
+  // Raised against the requisition, which is what lets the stock count towards it
+  // when Branch A receipts it - and is the only route by which this requisition
+  // can be fulfilled at all, since every delivery went to the central warehouse.
   const transfer = await call(central, 'POST', '/api/stock-transfers', {
     sourceBranchId: central_bid,
     destinationBranchId: branchA_bid,
+    requirementId,
     lines: [{ productId, batchId: usable.batch.id, quantity: '30' }],
   });
   if (!transfer.body?.data?.id) {
@@ -515,6 +535,37 @@ async function main() {
     '21. Receipt notified back to the source',
     typesFor(central).includes('STOCK_TRANSFER_RECEIVED'),
     typesFor(central)
+  );
+
+  /**
+   * The moment fulfilment actually happens: 30 vials arrived at the branch that
+   * asked for 100. This is the notification the earlier central deliveries did
+   * not earn, and it reports the real position rather than the company's.
+   *
+   * It goes to central procurement, because covering the remaining 70 is now
+   * their move. Branch A is NOT told - their own pharmacist performed the
+   * receipt, and the system never notifies somebody of their own action.
+   */
+  const partial = central.received.find(
+    (e) => e.type === 'STOCK_REQUIREMENT_PARTIALLY_FULFILLED'
+  );
+  check('21b. Arriving stock is what moves the requisition forward', Boolean(partial), typesFor(central));
+  check(
+    '21c. The partial message reports 30/100 with 70 remaining',
+    Boolean(
+      partial && partial.message.includes('30/100 units') && partial.message.includes('70 remaining')
+    ),
+    partial?.message
+  );
+  check(
+    '21d. One transition, one notification - it is not repeated',
+    central.received.filter((e) => e.type === 'STOCK_REQUIREMENT_PARTIALLY_FULFILLED').length === 1,
+    typesFor(central)
+  );
+  check(
+    '21e. The pharmacist who receipted it is not notified of their own action',
+    !branchA.received.some((e) => e.type === 'STOCK_REQUIREMENT_PARTIALLY_FULFILLED'),
+    typesFor(branchA)
   );
 
   /* ============================ STEP 9: dispensing ======================== */

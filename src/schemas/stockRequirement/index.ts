@@ -3,6 +3,8 @@ import { isoDate, positiveDecimal, reasonText, uuid } from '../common';
 
 export const createRequirementSchema = z.object({
   branchId: uuid,
+  /** Business date the requisition is raised on. Defaults to now. */
+  documentDate: isoDate.optional(),
   requiredDate: isoDate,
   reason: reasonText,
   lines: z

@@ -3,7 +3,11 @@ import { prisma } from '../database/prisma';
 import { AuthContext } from '../context/authContext';
 import { conflict, forbidden, notFound } from '../utils/errors';
 import { pageMeta, paginate } from '../schemas/common';
-import { IMMUTABLE_DOCUMENT_STATUSES, SORTABLE_DOCUMENT_FIELDS } from '../constants/documents';
+import {
+  CENTRAL_PROCUREMENT_READ_TYPES,
+  IMMUTABLE_DOCUMENT_STATUSES,
+  SORTABLE_DOCUMENT_FIELDS,
+} from '../constants/documents';
 import {
   assertBranchInCompany,
   assertDocumentReadAccess,
@@ -35,6 +39,58 @@ export function assertStatus(
   if (!allowed.includes(doc.status)) {
     throw conflict(
       'Cannot ' + operation + ' document ' + doc.documentNumber + ' while it is ' + doc.status
+    );
+  }
+}
+
+/**
+ * Moves a document from one of a set of statuses to the next one, atomically.
+ *
+ * `assertStatus` above reads and checks, which is honest but not safe on its
+ * own: between that read and the write, another request holding the same
+ * document can post it, dispatch it or cancel it, and both transactions then
+ * write their stock movements. Posting a goods receipt twice that way puts the
+ * goods on the shelf twice, and no later reconciliation can tell which of the
+ * two ledgers was the real delivery.
+ *
+ * The status test therefore lives in the WHERE clause of the update itself:
+ *
+ *   UPDATE document SET status = :next WHERE id = :id AND status IN (:allowed)
+ *
+ * PostgreSQL takes the row lock on that statement, so a second transaction
+ * attempting the same transition blocks until the first commits and then
+ * re-evaluates the predicate against the committed row - matching nothing, and
+ * reporting zero affected rows. Zero is the concurrency signal, and it is an
+ * error rather than a silent no-op.
+ *
+ * Callers run this BEFORE writing stock movements, so the loser of a race is
+ * refused before it touches the ledger rather than after.
+ */
+export async function transitionDocumentStatus(
+  tx: Prisma.TransactionClient,
+  doc: { id: string; documentNumber: string },
+  allowedFrom: DocumentStatus[],
+  nextStatus: DocumentStatus,
+  operation: string
+): Promise<void> {
+  const result = await tx.document.updateMany({
+    where: { id: doc.id, status: { in: allowedFrom } },
+    data: { status: nextStatus },
+  });
+
+  if (result.count === 0) {
+    const current = await tx.document.findUnique({
+      where: { id: doc.id },
+      select: { status: true },
+    });
+    throw conflict(
+      'Cannot ' +
+        operation +
+        ' document ' +
+        doc.documentNumber +
+        ' while it is ' +
+        (current?.status ?? 'no longer available') +
+        '. Another user changed it first; reload and try again.'
     );
   }
 }
@@ -115,6 +171,58 @@ export interface DocumentListFilters {
   toDate?: Date;
 }
 
+export interface DocumentListOptions {
+  /**
+   * Adds the first few product lines to each row.
+   *
+   * Off by default, because most listings are registers where the header is the
+   * whole point and the extra read would be waste. It is on for stock
+   * requisitions, where a picker has to tell REQ-0001 from REQ-0002 by what was
+   * asked for and how much, which the header alone cannot say.
+   */
+  includeLineSummary?: boolean;
+}
+
+/** Lines shown per row in a line summary; enough to identify, never a full document. */
+const LINE_SUMMARY_LIMIT = 3;
+
+/**
+ * The first few lines of each document in a page of results, in one read.
+ *
+ * Prisma cannot limit rows per group, so the page's lines are fetched together
+ * and capped per document here. A page is at most `limit` documents, so this is
+ * one extra query for the page rather than one per row.
+ */
+async function loadLineSummaries(documentIds: string[]) {
+  const lines = await prisma.documentLineItem.findMany({
+    where: { documentId: { in: documentIds } },
+    orderBy: [{ documentId: 'asc' }, { lineNumber: 'asc' }],
+    select: {
+      documentId: true,
+      quantity: true,
+      unitOfMeasure: true,
+      product: { select: { id: true, code: true, name: true, unit: true } },
+    },
+  });
+
+  const byDocument = new Map<
+    string,
+    { product: { id: string; code: string; name: string; unit: string }; quantity: string; unitOfMeasure: string | null }[]
+  >();
+  for (const line of lines) {
+    const current = byDocument.get(line.documentId) ?? [];
+    if (current.length < LINE_SUMMARY_LIMIT) {
+      current.push({
+        product: line.product,
+        quantity: line.quantity.toFixed(2),
+        unitOfMeasure: line.unitOfMeasure,
+      });
+    }
+    byDocument.set(line.documentId, current);
+  }
+  return byDocument;
+}
+
 /**
  * Authorization scope is baked into the where clause before filters, sorting and
  * pagination are applied - never after fetching.
@@ -122,13 +230,27 @@ export interface DocumentListFilters {
 export async function listDocuments(
   auth: AuthContext,
   documentType: DocumentType | undefined,
-  filters: DocumentListFilters
+  filters: DocumentListFilters,
+  options: DocumentListOptions = {}
 ) {
   const where = documentScopeWhere(auth, documentType);
 
   if (filters.branchId) {
     await assertBranchInCompany(auth, filters.branchId);
-    if (!isBranchInScope(auth, filters.branchId)) {
+    /**
+     * Central procurement users may already READ requisitions and orders for the
+     * whole company - that is the rule `documentScopeWhere` applies above. Asking
+     * to see only one branch's is a narrowing of what they can already see, so
+     * refusing it here made the filter stricter than the scope it filters, and
+     * left the central pharmacy unable to look up the requisition a transfer is
+     * being raised for.
+     */
+    const readableUnderProcurementRule =
+      auth.hasCentralWarehouseAccess &&
+      documentType !== undefined &&
+      CENTRAL_PROCUREMENT_READ_TYPES.includes(documentType);
+
+    if (!isBranchInScope(auth, filters.branchId) && !readableUnderProcurementRule) {
       throw forbidden('Access denied for this branch');
     }
     where.AND = [
@@ -156,13 +278,24 @@ export async function listDocuments(
     where.supplierId = filters.supplierId;
   }
   if (filters.search) {
+    const contains = { contains: filters.search, mode: 'insensitive' } as const;
+    // Branch and product are part of how a person names a document out loud -
+    // "Branch A's insulin requisition" - so a search that only read the document
+    // number forced them to know the number before they could look it up.
     where.AND = [
       ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
       {
         OR: [
-          { documentNumber: { contains: filters.search, mode: 'insensitive' } },
-          { supplierRef: { contains: filters.search, mode: 'insensitive' } },
-          { notes: { contains: filters.search, mode: 'insensitive' } },
+          { documentNumber: contains },
+          { supplierRef: contains },
+          { notes: contains },
+          { branch: { is: { name: contains } } },
+          { branch: { is: { code: contains } } },
+          { sourceBranch: { is: { name: contains } } },
+          { destinationBranch: { is: { name: contains } } },
+          { supplier: { is: { name: contains } } },
+          { lineItems: { some: { product: { is: { name: contains } } } } },
+          { lineItems: { some: { product: { is: { code: contains } } } } },
         ],
       },
     ];
@@ -194,7 +327,18 @@ export async function listDocuments(
     }),
   ]);
 
-  return { data: rows.map(serializeDocumentHeader), meta: pageMeta(filters, total) };
+  const lineSummaries =
+    options.includeLineSummary && rows.length > 0
+      ? await loadLineSummaries(rows.map((row) => row.id))
+      : null;
+
+  return {
+    data: rows.map((row) => ({
+      ...serializeDocumentHeader(row),
+      ...(lineSummaries ? { lineSummary: lineSummaries.get(row.id) ?? [] } : {}),
+    })),
+    meta: pageMeta(filters, total),
+  };
 }
 
 type DocumentHeader = {

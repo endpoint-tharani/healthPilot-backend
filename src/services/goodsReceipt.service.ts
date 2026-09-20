@@ -21,6 +21,7 @@ import {
   linkDocuments,
   listDocuments,
   loadDocumentForUpdate,
+  transitionDocumentStatus,
 } from './document.service';
 import { StockMovementInput, recordStockMovements } from './inventory.service';
 import {
@@ -353,7 +354,13 @@ export async function postGoodsReceipt(auth: AuthContext, id: string, reason?: s
     }
     await assertBranchAccess(auth, doc.branchId, tx);
 
+    // Claim the transition before any stock is written: a concurrent second post
+    // of the same receipt is refused here rather than duplicating the delivery.
+    await transitionDocumentStatus(tx, doc, [DocumentStatus.DRAFT], DocumentStatus.POSTED, 'post');
+
     const movements: StockMovementInput[] = [];
+    // The ledger is dated by the receipt, not by when the button was pressed.
+    const transactionDate = doc.documentDate;
     for (const line of doc.lineItems) {
       if (!line.batchId) {
         throw conflict('Line ' + line.lineNumber + ' has no batch');
@@ -374,6 +381,7 @@ export async function postGoodsReceipt(auth: AuthContext, id: string, reason?: s
           unitCost: line.unitPrice,
           stockStatus: StockStatus.USABLE,
           createdById: auth.userId,
+          transactionDate,
         });
       }
 
@@ -391,13 +399,12 @@ export async function postGoodsReceipt(auth: AuthContext, id: string, reason?: s
           unitCost: line.unitPrice,
           stockStatus: StockStatus.DAMAGED,
           createdById: auth.userId,
+          transactionDate,
         });
       }
       // Missing quantities never physically arrived: no stock movement at all.
     }
     await recordStockMovements(tx, movements);
-
-    await tx.document.update({ where: { id }, data: { status: DocumentStatus.POSTED } });
 
     await logDocumentAction(tx, {
       companyId: auth.companyId,
@@ -419,13 +426,13 @@ export async function postGoodsReceipt(auth: AuthContext, id: string, reason?: s
 
     // Fulfilment first: it may raise its own requirement notification, and both
     // belong to the same commit.
-    const purchaseOrderNumber = await propagateFulfilment(tx, auth, id);
+    const purchaseOrder = await propagateFulfilment(tx, auth, id);
 
     await notifyGoodsReceiptPosted(
       tx,
       auth,
       doc,
-      purchaseOrderNumber ?? 'its purchase order',
+      purchaseOrder?.documentNumber ?? 'its purchase order',
       sumReceiptTotals(doc.lineItems)
     );
   }, deliverNotifications);
@@ -444,7 +451,7 @@ export async function propagateFulfilment(
   tx: Prisma.TransactionClient,
   auth: AuthContext,
   goodsReceiptId: string
-): Promise<string | null> {
+): Promise<{ id: string; documentNumber: string } | null> {
   // A goods receipt is raised against exactly one purchase order.
   const poLink = await tx.documentLink.findFirst({
     where: { sourceDocumentId: goodsReceiptId, linkType: DocumentLinkType.RECEIVED_AGAINST },
@@ -462,9 +469,9 @@ export async function propagateFulfilment(
     await updateFulfilment(tx, auth, requirementId, fulfilled);
   }
 
-  // Returned only so the caller can name the order in a message; no caller
-  // depends on it for a business decision.
-  return poLink.targetDocument.documentNumber;
+  // The order itself, so a caller can name it in a message and - as the receipt
+  // correction does - re-value what the supplier has already billed against it.
+  return poLink.targetDocument;
 }
 
 /** Damaged and missing quantities against a purchase order, per product. */

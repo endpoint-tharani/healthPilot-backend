@@ -21,7 +21,7 @@ import {
   getDocumentDetail,
   listDocuments,
 } from './document.service';
-import { StockMovementInput, recordStockMovements } from './inventory.service';
+import { StockMovementInput, assertBatchIssuable, recordStockMovements } from './inventory.service';
 import { deliverNotifications, notifyingTransaction } from './notification.service';
 import { notifyDispensingCompleted } from './notificationEvents.service';
 
@@ -34,6 +34,8 @@ export interface DispensingLineInput {
 
 export interface CreateDispensingInput {
   branchId: string;
+  /** Business date of the sale. Defaults to now. */
+  documentDate?: Date;
   patientRef: string;
   prescriptionRef: string;
   paymentMethod: PaymentMethod;
@@ -57,20 +59,11 @@ export async function createDispensing(auth: AuthContext, input: CreateDispensin
   );
 
   const now = new Date();
-  batches.forEach((batch, index) => {
-    const lineNumber = index + 1;
-    if (batch.expiryDate.getTime() <= now.getTime()) {
-      throw conflict(
-        'Line ' + lineNumber + ': batch ' + batch.batchNumber + ' expired on ' +
-          batch.expiryDate.toISOString().slice(0, 10)
-      );
-    }
-    if (batch.status !== StockStatus.USABLE) {
-      throw conflict(
-        'Line ' + lineNumber + ': batch ' + batch.batchNumber + ' is ' + batch.status.toLowerCase()
-      );
-    }
-  });
+  // Expiry is judged as of today, never as of a backdated document date: stock
+  // that has already expired must not become dispensable by dating the sale
+  // earlier than it is.
+  batches.forEach((batch, index) => assertBatchIssuable(batch, 'dispense', index + 1, now));
+  const documentDate = input.documentDate ?? now;
 
   const documentId = await notifyingTransaction(async (tx) => {
     const documentNumber = await generateDocumentNumber(
@@ -95,7 +88,7 @@ export async function createDispensing(auth: AuthContext, input: CreateDispensin
         documentNumber,
         documentType: DocumentType.DISPENSING,
         status: DocumentStatus.COMPLETED,
-        documentDate: now,
+        documentDate,
         patientRef: input.patientRef,
         prescriptionRef: input.prescriptionRef,
         notes: input.notes,
@@ -141,6 +134,7 @@ export async function createDispensing(auth: AuthContext, input: CreateDispensin
         unitCost: products[index].purchasePrice,
         stockStatus: StockStatus.USABLE,
         createdById: auth.userId,
+        transactionDate: documentDate,
         notes: 'Dispensed on ' + documentNumber,
       });
     }
@@ -154,7 +148,9 @@ export async function createDispensing(auth: AuthContext, input: CreateDispensin
         paymentNumber,
         amount: totals.total,
         method: input.paymentMethod,
-        paymentDate: now,
+        // The patient pays at the counter, so the payment carries the sale's own
+        // business date rather than the moment the row was written.
+        paymentDate: documentDate,
         reference: input.prescriptionRef,
         notes: 'Dispensing ' + documentNumber,
         createdById: auth.userId,

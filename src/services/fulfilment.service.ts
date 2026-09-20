@@ -14,12 +14,13 @@ import { ZERO } from '../utils/decimal';
  * (which may only cover what is still short) need the same answer. One module is
  * also what keeps purchaseOrder and goodsReceipt from importing each other.
  *
- * The single rule: fulfilment is usable stock the requirement actually received,
- * through either of the two routes a requirement may legitimately be met by -
- * goods accepted from a supplier, and stock received from another branch on a
- * transfer raised for this requirement. Damaged and missing quantities, ordered
- * but undelivered quantities, dispatched but unreceived transfers and dispensing
- * all sit outside it.
+ * The single rule: fulfilment is usable stock the requirement actually received
+ * AT THE BRANCH THAT RAISED IT, through either of the two routes a requirement
+ * may legitimately be met by - goods accepted from a supplier into that branch,
+ * and stock received there from another branch on a transfer raised for this
+ * requirement. Damaged and missing quantities, ordered but undelivered
+ * quantities, dispatched but unreceived transfers, stock sitting at a different
+ * branch and dispensing all sit outside it.
  */
 
 /**
@@ -87,11 +88,24 @@ export async function getRequirementIdsForPurchaseOrder(
  * product, taken from the stock ledger so receipt corrections are automatically
  * reflected: a correction posts signed deltas, so the sum is the live position
  * rather than what the receipt originally claimed.
+ *
+ * `branchId` is the branch the answer is being asked ON BEHALF OF, and it is not
+ * optional information. Stock accepted at the central warehouse is stock the
+ * company owns, but it is not stock Branch A has received: until it is
+ * transferred and receipted there, Branch A's requirement is still outstanding.
+ * Summing the ledger by product alone conflated the two and let a delivery into
+ * central silently mark a branch requirement fulfilled - and, worse, closed the
+ * shortfall the branch was entitled to re-order or have transferred.
+ *
+ * Pass `null` only when the question genuinely is company-wide, as it is when
+ * valuing a supplier invoice: the supplier is owed for what was accepted from
+ * them, wherever it landed.
  */
 export async function getAcceptedUsableByProduct(
   tx: Prisma.TransactionClient,
   companyId: string,
-  purchaseOrderIds: string[]
+  purchaseOrderIds: string[],
+  branchId: string | null
 ): Promise<Map<string, Prisma.Decimal>> {
   const totals = new Map<string, Prisma.Decimal>();
   if (purchaseOrderIds.length === 0) {
@@ -121,18 +135,21 @@ export async function getAcceptedUsableByProduct(
 
   const documentIds = [...receiptIds, ...correctionLinks.map((l) => l.sourceDocumentId)];
 
+  // Grouped by branch as well as product, and filtered to the asking branch when
+  // one is given, so a movement that landed somewhere else cannot be counted.
   const grouped = await tx.inventoryTransaction.groupBy({
-    by: ['productId'],
+    by: ['productId', 'branchId'],
     where: {
       companyId,
       documentId: { in: documentIds },
       stockStatus: StockStatus.USABLE,
+      ...(branchId ? { branchId } : {}),
     },
     _sum: { quantity: true },
   });
 
   for (const row of grouped) {
-    totals.set(row.productId, row._sum.quantity ?? ZERO);
+    totals.set(row.productId, (totals.get(row.productId) ?? ZERO).plus(row._sum.quantity ?? ZERO));
   }
   return totals;
 }
@@ -147,8 +164,17 @@ export async function getAcceptedUsableForRequirement(
   companyId: string,
   requirementId: string
 ): Promise<Map<string, Prisma.Decimal>> {
+  const requirement = await tx.document.findUnique({
+    where: { id: requirementId },
+    select: { companyId: true, branchId: true },
+  });
+  if (!requirement || requirement.companyId !== companyId) {
+    return new Map<string, Prisma.Decimal>();
+  }
+
   const purchaseOrderIds = await getPurchaseOrderIdsForRequirement(tx, requirementId);
-  return getAcceptedUsableByProduct(tx, companyId, purchaseOrderIds);
+  // The requesting branch, never the company: see getAcceptedUsableByProduct.
+  return getAcceptedUsableByProduct(tx, companyId, purchaseOrderIds, requirement.branchId);
 }
 
 /**
@@ -381,10 +407,13 @@ export interface RequirementRemaining {
  *             - still open on its purchase orders
  *             - still in transit on its stock transfers
  *
- * `accepted` is the stock ledger, never the claimed receipt quantity. On
- * REQ-0001 the supplier claimed 100 and all 100 were received, but the
- * correction left 70 usable, so 30 is genuinely still procureable; deriving it
- * from the claimed quantity would wrongly answer 0.
+ * `accepted` is the stock ledger AT THE REQUESTING BRANCH, never the claimed
+ * receipt quantity and never the company-wide position. On REQ-0001 the supplier
+ * claimed 100 and all 100 were received into the central warehouse, but the
+ * correction left 70 usable there and only the 30 transferred on to Branch A and
+ * receipted count as fulfilment of Branch A's requirement; deriving it from the
+ * claimed quantity would wrongly answer 100, and ignoring the branch would
+ * wrongly answer 70.
  *
  * The two committed-but-undelivered terms are what stop the same shortfall being
  * claimed twice. A requirement for 100 with 60 on an open order and 40 in transit
@@ -400,6 +429,7 @@ export async function getRemainingRequirementByProduct(
     where: { id: requirementId },
     select: {
       companyId: true,
+      branchId: true,
       lineItems: { select: { productId: true, quantity: true } },
     },
   });
@@ -421,7 +451,12 @@ export async function getRemainingRequirementByProduct(
   }
 
   const purchaseOrderIds = await getPurchaseOrderIdsForRequirement(tx, requirementId);
-  const procurementAccepted = await getAcceptedUsableByProduct(tx, companyId, purchaseOrderIds);
+  const procurementAccepted = await getAcceptedUsableByProduct(
+    tx,
+    companyId,
+    purchaseOrderIds,
+    requirement.branchId
+  );
   // One read answers both transfer questions, rather than repeating the same
   // three queries for each of them.
   const transfers = await getTransferPosition(tx, companyId, requirementId);

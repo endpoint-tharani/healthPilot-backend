@@ -13,6 +13,8 @@ export const AuditAction = {
   /** Internal stock was allocated to a requirement by raising a transfer for it. */
   TRANSFER_ALLOCATED: 'TRANSFER_ALLOCATED',
   CREDIT_APPLIED: 'CREDIT_APPLIED',
+  /** A supplier invoice was re-valued because the accepted quantity behind it changed. */
+  DISPUTE_RECALCULATED: 'DISPUTE_RECALCULATED',
 } as const;
 
 export type AuditActionValue = (typeof AuditAction)[keyof typeof AuditAction];

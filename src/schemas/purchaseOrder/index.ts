@@ -5,6 +5,8 @@ export const createPurchaseOrderSchema = z.object({
   requirementId: uuid,
   supplierId: uuid,
   deliveryBranchId: uuid,
+  /** Business date the order is raised on. Defaults to now. */
+  documentDate: isoDate.optional(),
   expectedDeliveryDate: isoDate,
   notes: z.string().trim().max(500).optional(),
   lines: z

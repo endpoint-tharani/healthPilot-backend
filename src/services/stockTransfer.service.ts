@@ -24,9 +24,11 @@ import {
   linkDocuments,
   listDocuments,
   loadDocumentForUpdate,
+  transitionDocumentStatus,
 } from './document.service';
 import {
   StockMovementInput,
+  assertBatchIssuable,
   bucketKey,
   getSourceableStock,
   lockStockBuckets,
@@ -53,6 +55,8 @@ export interface TransferLineInput {
 export interface CreateTransferInput {
   sourceBranchId: string;
   destinationBranchId: string;
+  /** Business date of the transfer. Defaults to now. */
+  documentDate?: Date;
   expectedDate?: Date;
   notes?: string;
   /** Optional: the requirement this transfer is raised to help fulfil. */
@@ -163,9 +167,13 @@ export async function createStockTransfer(auth: AuthContext, input: CreateTransf
   const products = await Promise.all(
     input.lines.map((line) => assertProductInCompany(auth, line.productId))
   );
-  await Promise.all(
+  // Expired stock, and stock whose batch has been condemned or quarantined, may
+  // not be sent anywhere - the same rule dispensing applies, from the same
+  // function. Checked before the transfer exists, so it is never raised at all.
+  const batches = await Promise.all(
     input.lines.map((line) => assertBatchForProduct(auth, line.batchId, line.productId))
   );
+  batches.forEach((batch, index) => assertBatchIssuable(batch, 'transfer', index + 1));
 
   const requirement = input.requirementId
     ? await loadRequirementForTransfer(auth, input.requirementId, input.destinationBranchId)
@@ -209,6 +217,7 @@ export async function createStockTransfer(auth: AuthContext, input: CreateTransf
         documentNumber,
         documentType: DocumentType.STOCK_TRANSFER,
         status: DocumentStatus.DRAFT,
+        documentDate: input.documentDate ?? new Date(),
         expectedDeliveryDate: input.expectedDate,
         notes: input.notes,
         subtotal: totals.subtotal,
@@ -425,6 +434,21 @@ export async function dispatchStockTransfer(auth: AuthContext, id: string, reaso
     }
     await assertBranchAccess(auth, doc.sourceBranchId, tx);
 
+    // Re-checked at dispatch, not just at creation: a transfer raised last week
+    // for a batch that expires tomorrow must not be allowed to leave the
+    // warehouse next month.
+    await assertTransferBatchesIssuable(tx, doc.lineItems);
+
+    // Claimed before the ledger is touched, so two simultaneous dispatches of the
+    // same transfer cannot both take the stock out of the source branch.
+    await transitionDocumentStatus(
+      tx,
+      doc,
+      [DocumentStatus.DRAFT],
+      DocumentStatus.DISPATCHED,
+      'dispatch'
+    );
+
     const movements: StockMovementInput[] = [];
     for (const line of doc.lineItems) {
       if (!line.batchId) {
@@ -442,12 +466,12 @@ export async function dispatchStockTransfer(auth: AuthContext, id: string, reaso
         unitCost: line.unitPrice,
         stockStatus: StockStatus.USABLE,
         createdById: auth.userId,
+        transactionDate: doc.documentDate,
         notes: 'Dispatched on ' + doc.documentNumber,
       });
     }
     await recordStockMovements(tx, movements);
 
-    await tx.document.update({ where: { id }, data: { status: DocumentStatus.DISPATCHED } });
     await logDocumentAction(tx, {
       companyId: auth.companyId,
       documentId: id,
@@ -485,6 +509,15 @@ export async function receiveStockTransfer(auth: AuthContext, id: string, reason
     }
     await assertBranchAccess(auth, doc.destinationBranchId, tx);
 
+    // Same claim as dispatch: receiving twice would book the arrival twice.
+    await transitionDocumentStatus(
+      tx,
+      doc,
+      [DocumentStatus.DISPATCHED],
+      DocumentStatus.RECEIVED,
+      'receive'
+    );
+
     const movements: StockMovementInput[] = [];
     for (const line of doc.lineItems) {
       if (!line.batchId) {
@@ -502,12 +535,12 @@ export async function receiveStockTransfer(auth: AuthContext, id: string, reason
         unitCost: line.unitPrice,
         stockStatus: StockStatus.USABLE,
         createdById: auth.userId,
+        transactionDate: doc.documentDate,
         notes: 'Received on ' + doc.documentNumber,
       });
     }
     await recordStockMovements(tx, movements);
 
-    await tx.document.update({ where: { id }, data: { status: DocumentStatus.RECEIVED } });
     await logDocumentAction(tx, {
       companyId: auth.companyId,
       documentId: id,
@@ -528,6 +561,39 @@ export async function receiveStockTransfer(auth: AuthContext, id: string, reason
   }, deliverNotifications);
 
   return getDocumentDetail(auth, id);
+}
+
+/**
+ * Every batch on a transfer, checked against the issuable rule as it stands now.
+ * The document's own line include carries the batch number and expiry but not
+ * its status, so the batch rows are read here rather than trusting the snapshot.
+ */
+async function assertTransferBatchesIssuable(
+  tx: Prisma.TransactionClient,
+  lines: { lineNumber: number; batchId: string | null }[]
+): Promise<void> {
+  const batchIds = [...new Set(lines.map((line) => line.batchId).filter((id): id is string => Boolean(id)))];
+  if (batchIds.length === 0) {
+    return;
+  }
+
+  const batches = await tx.batch.findMany({
+    where: { id: { in: batchIds } },
+    select: { id: true, batchNumber: true, expiryDate: true, status: true },
+  });
+  const byId = new Map(batches.map((batch) => [batch.id, batch]));
+
+  const now = new Date();
+  for (const line of lines) {
+    if (!line.batchId) {
+      continue;
+    }
+    const batch = byId.get(line.batchId);
+    if (!batch) {
+      throw notFound('Batch not found');
+    }
+    assertBatchIssuable(batch, 'dispatch', line.lineNumber, now);
+  }
 }
 
 /** The requirement a transfer was raised for, by number, for a message. */

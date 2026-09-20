@@ -1,4 +1,16 @@
 node_modules
 dist
+build
+coverage
 smoke/dist
+
+# Secrets: never commit an environment file.
 .env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+frontend/.env.*
+
+*.log
+.DS_Store

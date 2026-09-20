@@ -29,6 +29,13 @@ export interface StockMovementInput {
   unitCost: Prisma.Decimal | string | number;
   stockStatus: StockStatus;
   createdById: string;
+  /**
+   * Business date of the movement. Defaults to now. Set from the posting
+   * document's own date so a backdated receipt or transfer lands in the ledger
+   * on the day the stock actually moved. The row's createdAt still records when
+   * it was written, and the two are deliberately different facts.
+   */
+  transactionDate?: Date;
   notes?: string;
 }
 
@@ -189,9 +196,57 @@ export async function recordStockMovements(
       totalCost: money(quantity.times(unitCost)),
       stockStatus: input.stockStatus,
       createdById: input.createdById,
+      ...(input.transactionDate ? { transactionDate: input.transactionDate } : {}),
       notes: input.notes,
     })),
   });
+}
+
+/**
+ * The one rule that decides whether a batch may leave a shelf at all.
+ *
+ * Dispensing has always enforced it; stock transfer did not, and only checked
+ * that the USABLE ledger bucket had the quantity. That left two ways for stock
+ * nobody should touch to move: a batch condemned after it was received still had
+ * a positive USABLE balance until an adjustment was posted, and an expired batch
+ * had one indefinitely - so either could be transferred to another branch and
+ * dispensed from there, where the receiving pharmacist had no reason to doubt
+ * it. Both operations now ask the same question of the same function, so the
+ * answer cannot differ between them.
+ *
+ * This is about the batch record. The quantity check, and the refusal to source
+ * from the DAMAGED or QUARANTINED buckets, stay where they are.
+ */
+export function assertBatchIssuable(
+  batch: { batchNumber: string; expiryDate: Date; status: StockStatus },
+  operation: string,
+  lineNumber: number,
+  asOf: Date = new Date()
+): void {
+  if (batch.expiryDate.getTime() <= asOf.getTime()) {
+    throw conflict(
+      'Line ' +
+        lineNumber +
+        ': cannot ' +
+        operation +
+        ' batch ' +
+        batch.batchNumber +
+        ', it expired on ' +
+        batch.expiryDate.toISOString().slice(0, 10)
+    );
+  }
+  if (batch.status !== StockStatus.USABLE) {
+    throw conflict(
+      'Line ' +
+        lineNumber +
+        ': cannot ' +
+        operation +
+        ' batch ' +
+        batch.batchNumber +
+        ', it is ' +
+        batch.status.toLowerCase()
+    );
+  }
 }
 
 export interface StockFilters {

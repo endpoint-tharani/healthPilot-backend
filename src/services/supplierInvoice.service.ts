@@ -2,7 +2,7 @@ import { DocumentLinkType, DocumentStatus, DocumentType, Prisma } from '@prisma/
 import { prisma, transaction } from '../database/prisma';
 import { AuthContext } from '../context/authContext';
 import { badRequest, conflict, notFound } from '../utils/errors';
-import { calculateLineTotals, dec, money, totalsFromLines, ZERO } from '../utils/decimal';
+import { LineTotals, calculateLineTotals, dec, money, totalsFromLines, ZERO } from '../utils/decimal';
 import { generateDocumentNumber } from '../utils/documentNumber';
 import { AuditAction, logDocumentAction } from './audit.service';
 import { assertProductInCompany } from './authorization.service';
@@ -68,7 +68,9 @@ export async function createSupplierInvoice(auth: AuthContext, input: CreateInvo
       }
     }
 
-    const acceptedByProduct = await getAcceptedUsableByProduct(tx, auth.companyId, [po.id]);
+    // Company-wide, not per branch: the supplier is owed for everything accepted
+    // from them against this order, wherever in the network it was delivered.
+    const acceptedByProduct = await getAcceptedUsableByProduct(tx, auth.companyId, [po.id], null);
 
     const lineTotals = input.lines.map((line) => {
       const poLine = poLineByProduct.get(line.productId)!;
@@ -183,6 +185,136 @@ export async function createSupplierInvoice(auth: AuthContext, input: CreateInvo
   }, deliverNotifications);
 
   return getInvoice(auth, documentId);
+}
+
+/* ----------------------------------------- re-valuing after a correction ---- */
+
+/**
+ * Re-values every supplier invoice raised against a purchase order, after the
+ * accepted quantity behind that order changed.
+ *
+ * The disputed amount is settled at invoicing time from the accepted position as
+ * it stood then, which is correct only while that position holds. A receiving
+ * correction raised AFTER the invoice - stock condemned on inspection a week
+ * later, a recount that finds a case short - silently invalidated it: the
+ * invoice went on claiming the supplier was owed for goods the warehouse no
+ * longer had, and because `allocatableAmount` is derived from the stored
+ * dispute, a payment for the full amount was still permitted. The money left the
+ * company for stock it does not hold.
+ *
+ * So the dispute is recomputed from the ledger rather than trusted, and the
+ * guard that stops disputed value being paid follows from it automatically:
+ * raising `disputedAmount` lowers `allocatableAmount` by the same amount, and a
+ * payment beyond it is refused by the existing allocation check.
+ *
+ * Invoices are re-valued oldest first and draw on one shared pool of accepted
+ * quantity, so an order invoiced in two instalments does not let both of them
+ * claim the same goods.
+ */
+export async function recomputeInvoiceDisputes(
+  tx: Prisma.TransactionClient,
+  auth: AuthContext,
+  purchaseOrderId: string
+): Promise<void> {
+  const invoiceLinks = await tx.documentLink.findMany({
+    where: { targetDocumentId: purchaseOrderId, linkType: DocumentLinkType.INVOICED_AGAINST },
+    select: { sourceDocumentId: true },
+  });
+  if (invoiceLinks.length === 0) {
+    return;
+  }
+
+  const invoices = await tx.document.findMany({
+    where: {
+      id: { in: invoiceLinks.map((link) => link.sourceDocumentId) },
+      companyId: auth.companyId,
+      documentType: DocumentType.SUPPLIER_INVOICE,
+      status: { not: DocumentStatus.CANCELLED },
+    },
+    include: { lineItems: { orderBy: { lineNumber: 'asc' } } },
+    orderBy: [{ documentDate: 'asc' }, { documentNumber: 'asc' }],
+  });
+  if (invoices.length === 0) {
+    return;
+  }
+
+  // Company-wide, for the same reason invoicing itself is: the supplier is owed
+  // for what was accepted from them, wherever it was delivered.
+  const accepted = await getAcceptedUsableByProduct(tx, auth.companyId, [purchaseOrderId], null);
+  const unclaimed = new Map(accepted);
+
+  for (const invoice of invoices) {
+    const payableLines: LineTotals[] = [];
+    const lineUpdates: { id: string; acceptedQuantity: Prisma.Decimal }[] = [];
+
+    for (const line of invoice.lineItems) {
+      const billed = line.quantity;
+      const available = unclaimed.get(line.productId) ?? ZERO;
+      const payableQty = available.lessThan(billed) ? available : billed;
+      unclaimed.set(line.productId, available.minus(payableQty));
+
+      payableLines.push(calculateLineTotals(payableQty, line.unitPrice, line.taxRate));
+      lineUpdates.push({ id: line.id, acceptedQuantity: payableQty });
+    }
+
+    const payable = totalsFromLines(payableLines);
+    const rawDispute = invoice.totalAmount.minus(payable.total);
+    const disputed = money(rawDispute.greaterThan(0) ? rawDispute : ZERO);
+
+    if (disputed.equals(invoice.disputedAmount)) {
+      continue;
+    }
+
+    for (const update of lineUpdates) {
+      await tx.documentLineItem.update({
+        where: { id: update.id },
+        data: { acceptedQuantity: update.acceptedQuantity },
+      });
+    }
+
+    // A dispute that reopens moves the invoice back to DISCREPANT even if it was
+    // already marked PAID: the status has to say that something is owed back,
+    // rather than quietly presenting a settled invoice nobody would look at.
+    const credited = await getCreditedAmount(tx, invoice.id);
+    const outstanding = money(invoice.totalAmount.minus(credited).minus(invoice.paidAmount));
+    const nextStatus = disputed.greaterThan(0)
+      ? DocumentStatus.DISCREPANT
+      : outstanding.greaterThan(0)
+        ? DocumentStatus.POSTED
+        : DocumentStatus.PAID;
+
+    await tx.document.update({
+      where: { id: invoice.id },
+      data: {
+        disputedAmount: disputed,
+        balanceAmount: outstanding.greaterThan(0) ? outstanding : ZERO,
+        status: nextStatus,
+      },
+    });
+
+    await logDocumentAction(tx, {
+      companyId: auth.companyId,
+      documentId: invoice.id,
+      userId: auth.userId,
+      action: AuditAction.DISPUTE_RECALCULATED,
+      reason: 'Accepted quantity changed by a receiving correction after invoicing',
+      oldData: {
+        disputedAmount: invoice.disputedAmount.toFixed(2),
+        acceptedPayable: money(invoice.totalAmount.minus(invoice.disputedAmount)).toFixed(2),
+        status: invoice.status,
+      },
+      newData: {
+        disputedAmount: disputed.toFixed(2),
+        acceptedPayable: payable.total.toFixed(2),
+        status: nextStatus,
+        // Surfaced rather than corrected: money already paid cannot be unpaid
+        // here, and a credit note or a supplier refund is the right answer.
+        overpaid: invoice.paidAmount.greaterThan(payable.total)
+          ? money(invoice.paidAmount.minus(payable.total)).toFixed(2)
+          : '0.00',
+      },
+    });
+  }
 }
 
 /** Credit notes already raised against an invoice. */

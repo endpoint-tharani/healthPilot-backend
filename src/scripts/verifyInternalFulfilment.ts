@@ -148,9 +148,12 @@ async function main() {
 
   /* ------------------------------------------------------------- setup ---- */
 
-  const company = await prisma.company.findFirst({ where: { code: { not: '' } } });
+  // By code, not "whichever company comes first": a database that also holds a
+  // tenant created through signup would otherwise hand this suite that tenant,
+  // which has none of the branches the scenario is written against.
+  const company = await prisma.company.findFirst({ where: { code: 'COMP-HEALTHPILOT' } });
   if (!company) {
-    throw new Error('No company found. Seed the database first.');
+    throw new Error('Company COMP-HEALTHPILOT is missing. Seed the database first.');
   }
 
   const branchRows = await prisma.branch.findMany({
@@ -1419,21 +1422,29 @@ async function main() {
       const product = await makeProduct('REG');
       const requirement = await approvedRequirement(product.id, '100', `REG ${RUN}`);
 
+      // Raised as the company admin, not the central pharmacy user: this order
+      // is delivered to Branch A, and the central pharmacy has no scope to
+      // transact there. The shared `procure` helper does the same for the same
+      // reason.
       const order = expectOk(
         'create purchase order',
-        await call(central, 'POST', '/api/purchase-orders', {
+        await call(admin, 'POST', '/api/purchase-orders', {
           requirementId: requirement.id,
           supplierId: supplier.id,
-          deliveryBranchId: branch['BR-CENTRAL'].id,
+          // Delivered to the branch that raised the requisition. This block is
+          // about what a correction does to fulfilment and to the follow-up
+          // order cap; delivering somewhere else would be testing a different
+          // rule, which the BRANCH-AWARE section below covers on its own.
+          deliveryBranchId: branch['BR-A'].id,
           expectedDeliveryDate: future(0.02),
           lines: [{ productId: product.id, quantity: '100' }],
         })
       );
-      expectOk('approve order', await call(central, 'POST', `/api/purchase-orders/${order.id}/approve`, {}));
+      expectOk('approve order', await call(admin, 'POST', `/api/purchase-orders/${order.id}/approve`, {}));
 
       const receipt = expectOk(
         'create receipt',
-        await call(central, 'POST', '/api/goods-receipts', {
+        await call(admin, 'POST', '/api/goods-receipts', {
           purchaseOrderId: order.id,
           supplierRef: `REG-${RUN}`,
           lines: [
@@ -1449,12 +1460,12 @@ async function main() {
           ],
         })
       );
-      const posted = expectOk('post receipt', await call(central, 'POST', `/api/goods-receipts/${receipt.id}/post`, {}));
+      const posted = expectOk('post receipt', await call(admin, 'POST', `/api/goods-receipts/${receipt.id}/post`, {}));
       check('R1. A clean 100 receipt reaches FULFILLED', (await requirementStatus(requirement.id)) === 'FULFILLED');
 
       expectOk(
         'correct receipt',
-        await call(central, 'POST', '/api/receipt-corrections', {
+        await call(admin, 'POST', '/api/receipt-corrections', {
           goodsReceiptId: receipt.id,
           reason: `Recount after delivery ${RUN}`,
           lines: [
@@ -1473,10 +1484,10 @@ async function main() {
       check('R3. Fulfilled reads 70 after the correction', afterCorrection.lines[0].fulfilled === '70.00', afterCorrection.lines[0]);
       check('R4. 30 is genuinely still procureable', afterCorrection.lines[0].outstanding === '30.00', afterCorrection.lines[0]);
 
-      const overFollowUp = await call(central, 'POST', '/api/purchase-orders', {
+      const overFollowUp = await call(admin, 'POST', '/api/purchase-orders', {
         requirementId: requirement.id,
         supplierId: supplier.id,
-        deliveryBranchId: branch['BR-CENTRAL'].id,
+        deliveryBranchId: branch['BR-A'].id,
         expectedDeliveryDate: future(0.02),
         lines: [{ productId: product.id, quantity: '31' }],
       });
@@ -1484,6 +1495,105 @@ async function main() {
 
       await procure(requirement.id, product.id, '30', 'REG');
       check('R6. The follow-up 30 reaches FULFILLED again', (await requirementStatus(requirement.id)) === 'FULFILLED');
+    }
+
+    section('BRANCH-AWARE FULFILMENT - stock at central is not stock at the branch');
+    {
+      /**
+       * A branch asks for 100. The supplier delivers all 100 into the central
+       * warehouse, which is a perfectly normal way to buy - but not one vial has
+       * reached the branch that asked, so nothing is fulfilled and the branch is
+       * still owed the lot. Only the transfer that actually arrives there counts.
+       *
+       * Fulfilment used to be summed by product across the whole company, so the
+       * delivery into central closed the branch's requisition and, worse, removed
+       * the shortfall it was entitled to have transferred or re-ordered.
+       */
+      const product = await makeProduct('BRANCHAWARE');
+      const requirement = await approvedRequirement(product.id, '100', `BRANCH-AWARE ${RUN}`);
+
+      const order = expectOk(
+        'create purchase order',
+        await call(central, 'POST', '/api/purchase-orders', {
+          requirementId: requirement.id,
+          supplierId: supplier.id,
+          deliveryBranchId: branch['BR-CENTRAL'].id,
+          expectedDeliveryDate: future(0.02),
+          lines: [{ productId: product.id, quantity: '100' }],
+        })
+      );
+      expectOk('approve order', await call(central, 'POST', `/api/purchase-orders/${order.id}/approve`, {}));
+
+      const receipt = expectOk(
+        'create receipt',
+        await call(central, 'POST', '/api/goods-receipts', {
+          purchaseOrderId: order.id,
+          supplierRef: `BA-${RUN}`,
+          lines: [
+            {
+              purchaseOrderLineItemId: order.lineItems[0].id,
+              quantity: '100',
+              acceptedQuantity: '100',
+              damagedQuantity: '0',
+              missingQuantity: '0',
+              batchNumber: `BA-${RUN}`,
+              expiryDate: future(3),
+            },
+          ],
+        })
+      );
+      expectOk('post receipt', await call(central, 'POST', `/api/goods-receipts/${receipt.id}/post`, {}));
+
+      const atCentral = expectOk('availability', await availability(central, requirement.id));
+      check(
+        'BA-1. A delivery into central fulfils nothing at the requesting branch',
+        atCentral.lines[0].fulfilled === '0.00',
+        atCentral.lines[0].fulfilled
+      );
+      check(
+        'BA-2. The requisition is still APPROVED, not FULFILLED',
+        (await requirementStatus(requirement.id)) === 'APPROVED'
+      );
+      check(
+        'BA-3. The branch is still owed all 100',
+        atCentral.lines[0].outstanding === '100.00',
+        atCentral.lines[0].outstanding
+      );
+      check(
+        'BA-4. The 100 at central is offered as internal supply instead',
+        atCentral.lines[0].suggestedInternalQty === '100.00',
+        atCentral.lines[0].suggestedInternalQty
+      );
+
+      const batch = await prisma.batch.findFirstOrThrow({
+        where: { productId: product.id, batchNumber: `BA-${RUN}` },
+        select: { id: true },
+      });
+      const transfer = await transferFor(requirement.id, branch['BR-CENTRAL'].id, [
+        { productId: product.id, batchId: batch.id, quantity: '40' },
+      ]);
+      expectOk('dispatch transfer', await dispatchTransfer(transfer.id));
+
+      const dispatched = expectOk('availability', await availability(central, requirement.id));
+      check(
+        'BA-5. Dispatch alone still fulfils nothing - it has not arrived',
+        dispatched.lines[0].fulfilled === '0.00',
+        dispatched.lines[0].fulfilled
+      );
+
+      expectOk('receive transfer', await receiveTransfer(transfer.id));
+      const arrived = expectOk('availability', await availability(central, requirement.id));
+      check(
+        'BA-6. Only what arrives at the branch counts as fulfilment',
+        arrived.lines[0].fulfilled === '40.00',
+        arrived.lines[0].fulfilled
+      );
+      check(
+        'BA-7. The requisition is PARTIALLY_FULFILLED, with 60 still owed',
+        (await requirementStatus(requirement.id)) === 'PARTIALLY_FULFILLED' &&
+          arrived.lines[0].outstanding === '60.00',
+        arrived.lines[0].outstanding
+      );
     }
 
   }

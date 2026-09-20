@@ -25,6 +25,8 @@ export interface CreditNoteLineInput {
 
 export interface CreateCreditNoteInput {
   supplierInvoiceId: string;
+  /** Business date of the credit note. Defaults to now. */
+  documentDate?: Date;
   supplierRef?: string;
   reason: string;
   lines: CreditNoteLineInput[];
@@ -107,6 +109,7 @@ export async function createCreditNote(auth: AuthContext, input: CreateCreditNot
         documentNumber,
         documentType: DocumentType.CREDIT_NOTE,
         status: DocumentStatus.POSTED,
+        documentDate: input.documentDate ?? new Date(),
         supplierRef: input.supplierRef ?? invoice.supplierRef,
         notes: input.reason,
         subtotal: totals.subtotal,

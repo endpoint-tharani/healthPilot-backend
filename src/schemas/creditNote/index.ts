@@ -1,8 +1,10 @@
 import { z } from 'zod';
-import { nonNegativeDecimal, percentDecimal, positiveDecimal, reasonText, uuid } from '../common';
+import { isoDate, nonNegativeDecimal, percentDecimal, positiveDecimal, reasonText, uuid } from '../common';
 
 export const createCreditNoteSchema = z.object({
   supplierInvoiceId: uuid,
+  /** Business date of the credit note. Defaults to now. */
+  documentDate: isoDate.optional(),
   supplierRef: z.string().trim().max(100).optional(),
   reason: reasonText,
   lines: z

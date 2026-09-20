@@ -107,7 +107,7 @@ export async function notifyRequirementSubmitted(
       recipients,
       documentBase(requirement, requirement.branchId, {
         type: NotificationType.STOCK_REQUIREMENT_SUBMITTED,
-        title: 'New Stock Requirement',
+        title: 'New Stock Requisition',
         message: `${requirement.documentNumber} submitted by ${branchName}.`,
         severity: NotificationSeverity.INFO,
         eventKey: eventKey(NotificationType.STOCK_REQUIREMENT_SUBMITTED, requirement.id),
@@ -159,7 +159,7 @@ export async function notifyRequirementDecision(
       mergeRecipients(auth.userId, branchTeam, requester),
       documentBase(requirement, requirement.branchId, {
         type,
-        title: approved ? 'Stock Requirement Approved' : 'Stock Requirement Rejected',
+        title: approved ? 'Stock Requisition Approved' : 'Stock Requisition Rejected',
         message,
         severity: approved ? NotificationSeverity.SUCCESS : NotificationSeverity.WARNING,
         eventKey: eventKey(type, requirement.id),
@@ -236,7 +236,7 @@ export async function notifyRequirementFulfilment(
       mergeRecipients(auth.userId, branchTeam, procurement, requester),
       documentBase(requirement, requirement.branchId, {
         type,
-        title: fulfilled ? 'Stock Requirement Fulfilled' : 'Stock Requirement Partially Fulfilled',
+        title: fulfilled ? 'Stock Requisition Fulfilled' : 'Stock Requisition Partially Fulfilled',
         message,
         severity: fulfilled ? NotificationSeverity.SUCCESS : NotificationSeverity.WARNING,
         eventKey: eventKey(type, requirement.id, transition),

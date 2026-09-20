@@ -13,6 +13,8 @@
     "prisma:seed": "tsx src/scripts/seed.ts",
     "prisma:studio": "prisma studio --schema=prisma",
     "verify:seed": "tsx src/scripts/verifySeed.ts",
+    "verify:scenario": "tsx src/scripts/verifyScenario.ts",
+    "verify:controls": "tsx src/scripts/verifyControls.ts",
     "verify:notifications": "tsx src/scripts/verifyNotifications.ts",
     "verify:internal-fulfilment": "tsx src/scripts/verifyInternalFulfilment.ts"
   },

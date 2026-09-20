@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { PaymentMethod } from '@prisma/client';
-import { nonNegativeDecimal, positiveDecimal, uuid } from '../common';
+import { isoDate, nonNegativeDecimal, positiveDecimal, uuid } from '../common';
 
 export const createDispensingSchema = z.object({
   branchId: uuid,
+  /** Business date the sale is made on. Defaults to now. */
+  documentDate: isoDate.optional(),
   patientRef: z.string().trim().min(1, 'Patient reference is required').max(100),
   prescriptionRef: z.string().trim().min(1, 'Prescription reference is required').max(100),
   paymentMethod: z.nativeEnum(PaymentMethod),
