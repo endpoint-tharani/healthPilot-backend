@@ -1,3 +1,4 @@
+export * from './accounting';
 export * from './audit';
 export * from './cache';
 export * from './documents';

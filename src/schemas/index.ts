@@ -1,3 +1,4 @@
+export * as accountingSchemas from './accounting';
 export * as authSchemas from './auth';
 export * as branchSchemas from './branch';
 export * as commonSchemas from './common';

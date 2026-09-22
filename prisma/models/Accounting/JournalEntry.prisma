@@ -1,0 +1,62 @@
+/**
+ * One double-entry posting. Balanced, immutable once POSTED, and traceable to the
+ * business event that caused it.
+ *
+ * sourceEventKey is the idempotency key and the reason duplicate accounting is
+ * impossible rather than unlikely: it names the event ("SUPPLIER_INVOICE:<id>"),
+ * and the unique index on (companyId, sourceEventKey) means a retried request,
+ * a replayed webhook or two concurrent posts resolve to one row - the loser gets
+ * a unique-violation from Postgres, not a second journal. A check-then-insert
+ * would race; this cannot.
+ *
+ * Reversals carry their own key ("REVERSAL:<journalId>"), so a correction can be
+ * raised exactly once too.
+ */
+model JournalEntry {
+  id                 String   @id @default(uuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id])
+  /** The branch the posting belongs to. Null only for company-level entries. */
+  branchId           String?
+  branch             Branch?  @relation(fields: [branchId], references: [id])
+  journalNumber      String
+  documentDate       DateTime
+  event              AccountingEvent
+  sourceType         JournalSourceType @default(MANUAL)
+  /** Stable, per-company identity of the business event this journal records. */
+  sourceEventKey     String
+  sourceDocumentId   String?
+  sourceDocument     Document? @relation("JournalSourceDocument", fields: [sourceDocumentId], references: [id])
+  /** Payments are not Documents, so they are linked in their own right. */
+  sourcePaymentId    String?
+  sourcePayment      Payment? @relation("JournalSourcePayment", fields: [sourcePaymentId], references: [id])
+  /** Kept as text as well, so a report stays readable if a source row is archived. */
+  sourceDocumentType String?
+  sourceReference    String?
+  description        String
+  status             JournalStatus @default(DRAFT)
+  /** Cached totals. The general ledger and every report read the lines, not these. */
+  totalDebit         Decimal  @default(0) @db.Decimal(14, 2)
+  totalCredit        Decimal  @default(0) @db.Decimal(14, 2)
+  /** Set on the entry a reversal cancels; the reversal points back at the original. */
+  reversalOfId       String?  @unique
+  reversalOf         JournalEntry? @relation("JournalReversal", fields: [reversalOfId], references: [id])
+  reversedBy         JournalEntry? @relation("JournalReversal")
+  createdById        String
+  createdBy          User     @relation("JournalCreatedBy", fields: [createdById], references: [id])
+  postedById         String?
+  postedBy           User?    @relation("JournalPostedBy", fields: [postedById], references: [id])
+  createdAt          DateTime @default(now())
+  postedAt           DateTime?
+  updatedAt          DateTime @updatedAt
+
+  lines JournalLine[]
+
+  @@unique([companyId, journalNumber])
+  @@unique([companyId, sourceEventKey])
+  @@index([companyId, documentDate])
+  @@index([companyId, status])
+  @@index([branchId])
+  @@index([sourceDocumentId])
+  @@index([sourcePaymentId])
+}

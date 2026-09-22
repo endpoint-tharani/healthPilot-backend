@@ -12,14 +12,20 @@ model Payment {
   paymentDate   DateTime      @default(now())
   reference     String?
   notes         String?
+  /** Where this payment stands with the books. Mirrors Document.accountingStatus. */
+  accountingStatus   AccountingStatus @default(NOT_REQUIRED)
+  accountingMessage  String?
+  accountingPostedAt DateTime?
   createdById   String
   createdBy     User          @relation("PaymentCreatedBy", fields: [createdById], references: [id])
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  allocations PaymentAllocation[]
+  allocations    PaymentAllocation[]
+  journalEntries JournalEntry[]     @relation("JournalSourcePayment")
 
   @@unique([companyId, paymentNumber])
   @@index([companyId])
   @@index([supplierId])
+  @@index([companyId, accountingStatus])
 }

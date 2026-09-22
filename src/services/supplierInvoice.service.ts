@@ -13,9 +13,17 @@ import {
   listDocuments,
 } from './document.service';
 import { getAcceptedUsableByProduct } from './fulfilment.service';
+import { computeInvoiceFinancials, getCreditedAmount } from './invoiceFinancials';
 import { deliverNotifications, notifyingTransaction } from './notification.service';
 import { notifySupplierInvoiceCreated } from './notificationEvents.service';
 import { assertBranchAccess } from './authorization.service';
+import { autoPostDocumentAccounting } from './accounting/autoPost.service';
+
+// Both used to live here and are re-exported so every existing caller keeps its
+// import. They moved to break the cycle that posting inside this transaction
+// would otherwise create; see invoiceFinancials.ts.
+export { computeInvoiceFinancials, getCreditedAmount };
+export type { InvoiceFinancials } from './invoiceFinancials';
 
 export interface InvoiceLineInput {
   productId: string;
@@ -181,6 +189,14 @@ export async function createSupplierInvoice(auth: AuthContext, input: CreateInvo
       disputed
     );
 
+    // The invoice is created already POSTED (or DISCREPANT, when part of it is
+    // disputed) - creation *is* finalisation here, and it is the point at which
+    // the company owes the supplier. So the payable is booked now, on this
+    // transaction: the liability and the document that created it commit
+    // together, and the accepted value rather than the claimed value is what
+    // reaches the balance sheet.
+    await autoPostDocumentAccounting(tx, auth, invoice.id, DocumentType.SUPPLIER_INVOICE);
+
     return invoice.id;
   }, deliverNotifications);
 
@@ -315,73 +331,6 @@ export async function recomputeInvoiceDisputes(
       },
     });
   }
-}
-
-/** Credit notes already raised against an invoice. */
-export async function getCreditedAmount(
-  tx: Prisma.TransactionClient,
-  invoiceId: string
-): Promise<Prisma.Decimal> {
-  const links = await tx.documentLink.findMany({
-    where: { targetDocumentId: invoiceId, linkType: DocumentLinkType.CREDIT_FOR },
-    select: { sourceDocumentId: true },
-  });
-  if (links.length === 0) {
-    return ZERO;
-  }
-
-  const result = await tx.document.aggregate({
-    where: {
-      id: { in: links.map((l) => l.sourceDocumentId) },
-      status: { not: DocumentStatus.CANCELLED },
-    },
-    _sum: { totalAmount: true },
-  });
-  return result._sum.totalAmount ?? ZERO;
-}
-
-export interface InvoiceFinancials {
-  invoiceTotal: Prisma.Decimal;
-  disputedAmount: Prisma.Decimal;
-  creditedAmount: Prisma.Decimal;
-  paidAmount: Prisma.Decimal;
-  acceptedPayable: Prisma.Decimal;
-  outstandingBalance: Prisma.Decimal;
-  allocatableAmount: Prisma.Decimal;
-}
-
-/**
- * acceptedPayable is the undisputed value of the invoice. allocatableAmount is
- * what a payment may still settle - it excludes any dispute that has not yet
- * been cleared by a credit note, which is what stops disputed value being paid.
- */
-export async function computeInvoiceFinancials(
-  tx: Prisma.TransactionClient,
-  invoice: {
-    id: string;
-    totalAmount: Prisma.Decimal;
-    disputedAmount: Prisma.Decimal;
-    paidAmount: Prisma.Decimal;
-  }
-): Promise<InvoiceFinancials> {
-  const creditedAmount = await getCreditedAmount(tx, invoice.id);
-  const openDispute = invoice.disputedAmount.minus(creditedAmount);
-  const remainingDispute = openDispute.greaterThan(0) ? openDispute : ZERO;
-
-  const outstandingBalance = money(
-    invoice.totalAmount.minus(creditedAmount).minus(invoice.paidAmount)
-  );
-  const allocatableAmount = money(outstandingBalance.minus(remainingDispute));
-
-  return {
-    invoiceTotal: invoice.totalAmount,
-    disputedAmount: invoice.disputedAmount,
-    creditedAmount,
-    paidAmount: invoice.paidAmount,
-    acceptedPayable: money(invoice.totalAmount.minus(invoice.disputedAmount)),
-    outstandingBalance,
-    allocatableAmount: allocatableAmount.greaterThan(0) ? allocatableAmount : ZERO,
-  };
 }
 
 export async function getInvoice(auth: AuthContext, id: string) {

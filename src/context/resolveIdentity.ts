@@ -26,10 +26,10 @@ export async function authContextFromAccessToken(token: string): Promise<AuthCon
   });
 
   if (!user || !user.isActive || !user.company.isActive) {
-    throw unauthorized('Account is no longer active');
+    throw unauthorized('Account is no longer active', 'ACCOUNT_INACTIVE');
   }
   if (user.companyId !== claims.companyId || user.role !== claims.role) {
-    throw unauthorized('Token no longer matches the user record');
+    throw unauthorized('Token no longer matches the user record', 'SESSION_INVALID');
   }
 
   const hasAllBranches = user.branchScope === 'ALL_BRANCHES';

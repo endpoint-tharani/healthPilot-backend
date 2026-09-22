@@ -21,6 +21,11 @@ import {
   receiveStockTransfer,
 } from '../services/stockTransfer.service';
 import { createDispensing } from '../services/dispensing.service';
+import { initializeCompanyAccounting } from '../services/accounting/chartOfAccounts.service';
+import {
+  postDocumentAccounting,
+  postSupplierPaymentAccounting,
+} from '../services/accounting/accounting.service';
 
 const DEFAULT_PASSWORD = process.env.SEED_PASSWORD || 'Password123!';
 
@@ -88,13 +93,20 @@ const DATE = {
  * documents they point at.
  */
 async function resetCompanyTransactions(companyId: string, companyCode: string) {
-  const [documents, movements, payments] = await Promise.all([
+  const [documents, movements, payments, journals] = await Promise.all([
     prisma.document.count({ where: { companyId } }),
     prisma.inventoryTransaction.count({ where: { companyId } }),
     prisma.payment.count({ where: { companyId } }),
+    prisma.journalEntry.count({ where: { companyId } }),
   ]);
 
   await prisma.$transaction([
+    // Journals go first: they point at documents and payments with ON DELETE SET
+    // NULL, so deleting the documents underneath them would leave a set of posted
+    // entries attached to nothing, and their sourceEventKey would still be taken -
+    // the re-seeded invoice would find its accounting "already posted" against a
+    // document that no longer exists. Lines cascade from the entry.
+    prisma.journalEntry.deleteMany({ where: { companyId } }),
     prisma.documentLog.deleteMany({ where: { companyId } }),
     prisma.notification.deleteMany({ where: { companyId } }),
     prisma.paymentAllocation.deleteMany({
@@ -113,6 +125,7 @@ async function resetCompanyTransactions(companyId: string, companyCode: string) 
     documents,
     inventoryTransactions: movements,
     payments,
+    journalEntries: journals,
   });
 }
 
@@ -598,7 +611,7 @@ async function seedScenario(masters: {
 
   /* -- 06 Sep: credit note clears the dispute, then we pay what is owed ---- */
 
-  await createCreditNote(central, {
+  const creditNote = await createCreditNote(central, {
     supplierInvoiceId: invoice.id,
     documentDate: DATE.correction,
     supplierRef: 'MS-CN-5521A',
@@ -606,7 +619,7 @@ async function seedScenario(masters: {
     lines: [{ productId, quantity: '30', unitPrice: '500.00', taxRate: '5.00' }],
   });
 
-  await createPayment(central, {
+  const supplierPayment = await createPayment(central, {
     supplierId,
     branchId: branches['BR-CENTRAL'],
     amount: '36750.00',
@@ -652,9 +665,99 @@ async function seedScenario(masters: {
     purchaseOrderId,
     goodsReceiptId,
     invoiceId: invoice.id,
+    creditNoteId: creditNote.id,
+    supplierPaymentId: supplierPayment.id,
     transferId: transfer.id,
     dispensingId: dispensing.id,
   };
+}
+
+/* ------------------------------------------------------------- the books ---- */
+
+/**
+ * Checks that the scenario's accounting was raised by the business workflow, and
+ * reports what reached the books.
+ *
+ * This used to raise the journals itself, as a stage after the pharmacy scenario.
+ * It no longer does, because that was the gap this integration closed: documents
+ * were created correctly and the books were only ever written by a seed script or
+ * an explicit API call, so a production invoice raised through the UI left no
+ * accounting behind it at all. Posting now happens inside the business
+ * transaction that finalises each document.
+ *
+ * So what is left here is the check that it actually did. Anything still PENDING
+ * is booked through the recovery path and reported loudly - a scenario that needs
+ * the recovery path is a scenario where the integration did not fire.
+ */
+async function reportScenarioAccounting(scenario: {
+  invoiceId: string;
+  creditNoteId: string;
+  supplierPaymentId: string;
+  transferId: string;
+  dispensingId: string;
+}) {
+  // Read as the company admin rather than the central pharmacy user, because the
+  // books span every branch: the supplier invoice belongs to the central warehouse
+  // while the dispensing belongs to Branch A, and the central user is scoped to
+  // the warehouse alone.
+  const accountant = await actingAs('admin@healthpilot.ai');
+
+  const documents = await prisma.document.findMany({
+    where: {
+      id: {
+        in: [
+          scenario.invoiceId,
+          scenario.creditNoteId,
+          scenario.transferId,
+          scenario.dispensingId,
+        ],
+      },
+    },
+    select: {
+      id: true,
+      documentNumber: true,
+      documentType: true,
+      accountingStatus: true,
+      accountingMessage: true,
+    },
+  });
+
+  const recovered: string[] = [];
+  for (const document of documents) {
+    if (document.accountingStatus === 'PENDING' || document.accountingStatus === 'FAILED') {
+      logger.warn('Scenario document was not booked by its own transaction', {
+        document: document.documentNumber,
+        status: document.accountingStatus,
+        reason: document.accountingMessage,
+      });
+      await postDocumentAccounting(accountant, document.id);
+      recovered.push(document.documentNumber);
+    }
+  }
+
+  const payment = await prisma.payment.findUniqueOrThrow({
+    where: { id: scenario.supplierPaymentId },
+    select: { paymentNumber: true, accountingStatus: true, accountingMessage: true },
+  });
+  if (payment.accountingStatus === 'PENDING' || payment.accountingStatus === 'FAILED') {
+    logger.warn('Scenario payment was not booked by its own transaction', {
+      payment: payment.paymentNumber,
+      status: payment.accountingStatus,
+      reason: payment.accountingMessage,
+    });
+    await postSupplierPaymentAccounting(accountant, scenario.supplierPaymentId);
+    recovered.push(payment.paymentNumber);
+  }
+
+  logger.info('Scenario accounting raised by the business workflow', {
+    documents: documents.map((d) => d.documentNumber + ': ' + d.accountingStatus),
+    supplierPayment: payment.paymentNumber + ': ' + payment.accountingStatus,
+    // Named so it is recorded that the transfer was considered and deliberately
+    // produces nothing: an internal movement between two branches of one company
+    // earns no revenue and incurs no expense.
+    stockTransfer: 'no journal - internal movement, no P&L impact',
+    recoveredByRetry: recovered.length === 0 ? 'none' : recovered,
+  });
 }
 
 /** Raise, submit and approve one branch requisition, as the two users involved. */
@@ -699,12 +802,25 @@ async function main() {
   // branch that was still referenced a moment ago may now be genuinely unused.
   await seedCompanyA(passwordHash);
 
+  // Both tenants get a chart of accounts, including the isolation tenant: proving
+  // that company A's journals never reach company B's reports needs company B to
+  // have books of its own to be absent from.
+  const chartA = await initializeCompanyAccounting(a.company.id);
+  const chartB = await initializeCompanyAccounting(b.company.id);
+  logger.info('Chart of accounts initialised', {
+    companyA: chartA.templateKey + '@' + chartA.templateVersion,
+    companyAAccounts: chartA.total,
+    companyB: chartB.templateKey + '@' + chartB.templateVersion,
+  });
+
   const scenario = await seedScenario({
     branches: a.branches,
     supplierId: a.supplier.id,
     productId: a.product.id,
     batchId: a.batch.id,
   });
+
+  await reportScenarioAccounting(scenario);
 
   const documents = await prisma.document.findMany({
     where: { companyId: a.company.id },
@@ -718,8 +834,20 @@ async function main() {
     scenario: documents.map((d) => d.documentNumber + ' (' + d.status + ')'),
     openRequisitions: [scenario.requirementB, scenario.requirementC].length,
   });
+  const journals = await prisma.journalEntry.findMany({
+    where: { companyId: a.company.id },
+    orderBy: { journalNumber: 'asc' },
+    select: { journalNumber: true, event: true, totalDebit: true, status: true },
+  });
+  logger.info('Seeded books', {
+    journals: journals.map(
+      (j) => j.journalNumber + ' ' + j.event + ' ' + j.totalDebit.toFixed(2) + ' (' + j.status + ')'
+    ),
+  });
+
   logger.info('All seeded users share the password set by SEED_PASSWORD (default Password123!)');
   logger.info('Run `npm run verify:scenario` to assert the seeded stock and money positions');
+  logger.info('Run `npm run verify:accounting` to assert the books balance and reconcile');
 }
 
 main()

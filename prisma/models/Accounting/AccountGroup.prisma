@@ -1,0 +1,23 @@
+/** Optional grouping under a head. Absent wherever the template defines none. */
+model AccountGroup {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  code      String
+  name      String
+  headId    String
+  head      AccountHead @relation(fields: [headId], references: [id])
+  groupType AccountGroupType @default(NORMAL)
+  isLocked  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subGroups AccountSubGroup[]
+  ledgers   Ledger[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([headId])
+}

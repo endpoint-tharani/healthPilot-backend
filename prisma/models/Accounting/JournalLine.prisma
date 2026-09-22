@@ -1,0 +1,49 @@
+/**
+ * One side of a posting. Exactly one of debit and credit is greater than zero;
+ * both zero, or both set, is refused by the journal service before the entry is
+ * written, and Decimal(14,2) keeps the arithmetic exact rather than binary.
+ *
+ * branchId is carried on the line as well as the entry so a single journal can
+ * span branches and still be reported per branch - a company-level posting split
+ * across two branches would otherwise be attributable to neither.
+ */
+model JournalLine {
+  id             String   @id @default(uuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  lineNumber     Int
+  ledgerId       String
+  ledger         Ledger   @relation(fields: [ledgerId], references: [id])
+  branchId       String?
+  branch         Branch?  @relation(fields: [branchId], references: [id])
+  /**
+   * The supplier this line is attributable to, and the whole of the accounts
+   * payable subledger.
+   *
+   * The alternative - a ledger account per supplier, 2302 MediSupply, 2303 the
+   * next one - is what turns a chart of accounts into a contact list: the Ind AS
+   * reporting format would gain a caption per trading partner, the Trial Balance
+   * would grow a row every time procurement onboards a vendor, and consolidating
+   * "Trade payables" for the balance sheet would mean pattern-matching account
+   * codes. Here 2301 stays the single control account, every payable line names
+   * the supplier behind it, and the per-supplier position is a filter over the
+   * same lines the control account sums - so the subledger reconciles with the
+   * control account by construction rather than by a reconciliation job.
+   *
+   * Null on lines that are not attributable to a supplier: revenue, cost of
+   * sales, the bank side of a patient receipt.
+   */
+  supplierId     String?
+  supplier       Supplier? @relation(fields: [supplierId], references: [id])
+  debit          Decimal  @default(0) @db.Decimal(14, 2)
+  credit         Decimal  @default(0) @db.Decimal(14, 2)
+  description    String?
+  reference      String?
+  createdAt      DateTime @default(now())
+
+  @@unique([journalEntryId, lineNumber])
+  @@index([journalEntryId])
+  @@index([ledgerId])
+  @@index([branchId])
+  @@index([supplierId])
+}

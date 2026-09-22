@@ -7,6 +7,8 @@ import { signAccessToken } from '../utils/jwt';
 import { durationToMs } from '../utils/duration';
 import { conflict, forbidden, notFound, unauthorized } from '../utils/errors';
 import { permissionsForRole } from '../constants/permissions';
+import { logger } from '../loggers';
+import { initializeCompanyAccounting } from './accounting/chartOfAccounts.service';
 
 export interface LoginInput {
   email: string;
@@ -182,13 +184,57 @@ export async function signup(input: SignupInput, userAgent?: string) {
     return { company, branches, user };
   }).catch(translateSignupConflict);
 
+  // A new tenant gets its chart of accounts as part of being set up, rather than
+  // waiting for somebody to remember. Until now a company existed with no books at
+  // all, and the first supplier invoice was where that was discovered.
+  //
+  // Deliberately after the commit rather than inside it: initialisation writes a
+  // few hundred rows of reporting hierarchy, and folding that into the signup
+  // transaction would put the tenant's whole registration at the mercy of it. It
+  // is also idempotent, so the recovery when it does fail is simply to run it
+  // again - which is what the "Initialize Accounting" action on the chart of
+  // accounts page does.
+  const accounting = await initializeTenantAccounting(result.company.id, result.company.code);
+
   const tokens = await issueTokens(result.user, userAgent);
   return {
     ...tokens,
     user: publicUser(result.user),
     company: { id: result.company.id, code: result.company.code, name: result.company.name },
     branches: result.branches,
+    accounting,
   };
+}
+
+/**
+ * Initialises a new tenant's books, and never fails the signup over it.
+ *
+ * A company that could not be registered because its chart of accounts did not
+ * build is a worse outcome than a company that has to press one button. The
+ * result says which happened, so the caller is told rather than left to guess.
+ */
+async function initializeTenantAccounting(
+  companyId: string,
+  companyCode: string
+): Promise<{ initialized: boolean; templateKey: string | null; error: string | null }> {
+  try {
+    const chart = await initializeCompanyAccounting(companyId);
+    logger.info('New tenant accounting initialised', {
+      company: companyCode,
+      template: chart.templateKey + '@' + chart.templateVersion,
+      ledgers: chart.total.ledgers,
+      mappings: chart.total.mappings,
+    });
+    return { initialized: true, templateKey: chart.templateKey, error: null };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    logger.error('New tenant created without a chart of accounts', {
+      company: companyCode,
+      companyId,
+      reason,
+    });
+    return { initialized: false, templateKey: null, error: reason };
+  }
 }
 
 export async function login(input: LoginInput, userAgent?: string) {
@@ -208,10 +254,10 @@ export async function login(input: LoginInput, userAgent?: string) {
     throw invalid;
   }
   if (!user.isActive) {
-    throw unauthorized('User account is inactive');
+    throw unauthorized('User account is inactive', 'ACCOUNT_INACTIVE');
   }
   if (!user.company.isActive) {
-    throw unauthorized('Company account is inactive');
+    throw unauthorized('Company account is inactive', 'ACCOUNT_INACTIVE');
   }
 
   const tokens = await issueTokens(user, userAgent);
@@ -229,7 +275,7 @@ export async function refresh(refreshToken: string, userAgent?: string) {
   });
 
   if (!record) {
-    throw unauthorized('Invalid refresh token');
+    throw unauthorized('Invalid refresh token', 'REFRESH_TOKEN_INVALID');
   }
 
   if (record.revoked) {
@@ -237,14 +283,14 @@ export async function refresh(refreshToken: string, userAgent?: string) {
       where: { userId: record.userId, revoked: false },
       data: { revoked: true, revokedAt: new Date() },
     });
-    throw unauthorized('Refresh token has been revoked');
+    throw unauthorized('Refresh token has been revoked', 'REFRESH_TOKEN_REVOKED');
   }
 
   if (record.expiresAt <= new Date()) {
-    throw unauthorized('Refresh token has expired');
+    throw unauthorized('Refresh token has expired', 'REFRESH_TOKEN_EXPIRED');
   }
   if (!record.user.isActive || !record.user.company.isActive) {
-    throw unauthorized('Account is inactive');
+    throw unauthorized('Account is inactive', 'ACCOUNT_INACTIVE');
   }
 
   await prisma.refreshToken.update({

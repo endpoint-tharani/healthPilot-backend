@@ -1,0 +1,28 @@
+/**
+ * The top of the Ind AS reporting hierarchy: Asset, Liability, Equity, Income,
+ * Expenses. Natures are company-scoped rather than global so one tenant can be
+ * initialised from a different reporting template without touching another's
+ * books - the whole chart is tenant data, not shared reference data.
+ *
+ * ledgerCodeFrom/To carry the template's code range for the nature. Ledger codes
+ * are validated against it on creation, which is what keeps 4101 an income
+ * account and 5101 an expense one across every company.
+ */
+model AccountNature {
+  id              String   @id @default(uuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id])
+  /** Template code: AS, LI, EQ, IN, EX. Never renamed once initialised. */
+  code            String
+  name            String
+  ledgerCodeFrom  Int
+  ledgerCodeTo    Int
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  natureTypes AccountNatureType[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}

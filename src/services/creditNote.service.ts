@@ -12,7 +12,8 @@ import {
   linkDocuments,
   listDocuments,
 } from './document.service';
-import { computeInvoiceFinancials } from './supplierInvoice.service';
+import { computeInvoiceFinancials } from './invoiceFinancials';
+import { autoPostDocumentAccounting } from './accounting/autoPost.service';
 import { deliverNotifications, notifyingTransaction } from './notification.service';
 import { notifyCreditNotePosted } from './notificationEvents.service';
 
@@ -187,6 +188,14 @@ export async function createCreditNote(auth: AuthContext, input: CreateCreditNot
       invoice.documentNumber,
       totals.total
     );
+
+    // A credit note is raised POSTED, so this is its finalisation. Whether it
+    // produces a journal depends on what the invoice actually booked: in the
+    // standard flow it clears disputed value the invoice journal never recognised
+    // as a liability, and the honest answer is a memo rather than a movement. The
+    // accounting service decides which, and records the reason on the document
+    // either way.
+    await autoPostDocumentAccounting(tx, auth, creditNote.id, DocumentType.CREDIT_NOTE);
 
     return creditNote.id;
   }, deliverNotifications);

@@ -12,7 +12,7 @@ export async function authenticateUser(req: Request, _res: Response, next: NextF
   try {
     const header = req.headers.authorization;
     if (!header || !header.startsWith('Bearer ')) {
-      throw unauthorized('Missing or malformed Authorization header');
+      throw unauthorized('Missing or malformed Authorization header', 'TOKEN_MISSING');
     }
 
     setAuthContext(req, await authContextFromAccessToken(header.slice('Bearer '.length).trim()));

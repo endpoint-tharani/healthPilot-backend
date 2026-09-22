@@ -1,0 +1,19 @@
+/** Current / non-current split beneath a nature (AS-NT-0001, LI-NT-0002, ...). */
+model AccountNatureType {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  code      String
+  name      String
+  natureId  String
+  nature    AccountNature @relation(fields: [natureId], references: [id])
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  heads AccountHead[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([natureId])
+}

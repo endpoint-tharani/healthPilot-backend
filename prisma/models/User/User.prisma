@@ -20,6 +20,8 @@ model User {
   documentLogs          DocumentLog[]          @relation("LogUser")
   refreshTokens         RefreshToken[]
   notifications         Notification[]         @relation("NotificationRecipient")
+  createdJournalEntries JournalEntry[]         @relation("JournalCreatedBy")
+  postedJournalEntries  JournalEntry[]         @relation("JournalPostedBy")
 
   @@index([companyId])
 }

@@ -1,3 +1,4 @@
+export * from './accounting.controller';
 export * from './auth.controller';
 export * from './branch.controller';
 export * from './creditNote.controller';

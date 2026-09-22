@@ -1,0 +1,2834 @@
+{
+  "key": "IND_AS",
+  "name": "Ind AS Reporting Format",
+  "version": "2.0.0",
+  "description": "Chart of accounts laid out to the Schedule III / Ind AS balance sheet and statement of profit and loss captions, with positional numeric codes. A code carries its own position in the hierarchy: head NHH00, group NHHGG, sub-group NHHGGSS and ledger NHHGGSSLL, where N is the nature (1 Asset, 2 Liability, 3 Equity, 4 Income, 5 Expense). Head codes always end in 00, so a head can never collide with a group.",
+  "natures": [
+    {
+      "code": "AS",
+      "name": "Asset",
+      "ledgerCodeRange": [
+        100000000,
+        199999999
+      ]
+    },
+    {
+      "code": "LI",
+      "name": "Liability",
+      "ledgerCodeRange": [
+        200000000,
+        299999999
+      ]
+    },
+    {
+      "code": "EQ",
+      "name": "Equity",
+      "ledgerCodeRange": [
+        300000000,
+        399999999
+      ]
+    },
+    {
+      "code": "IN",
+      "name": "Income",
+      "ledgerCodeRange": [
+        400000000,
+        499999999
+      ]
+    },
+    {
+      "code": "EX",
+      "name": "Expenses",
+      "ledgerCodeRange": [
+        500000000,
+        599999999
+      ]
+    }
+  ],
+  "natureTypes": [
+    {
+      "code": "AS-NT-0001",
+      "name": "Non-Current Asset",
+      "natureCode": "AS"
+    },
+    {
+      "code": "AS-NT-0002",
+      "name": "Current Asset",
+      "natureCode": "AS"
+    },
+    {
+      "code": "LI-NT-0001",
+      "name": "Non-Current Liability",
+      "natureCode": "LI"
+    },
+    {
+      "code": "LI-NT-0002",
+      "name": "Current Liability",
+      "natureCode": "LI"
+    },
+    {
+      "code": "EQ-NT-0001",
+      "name": "Equity",
+      "natureCode": "EQ"
+    },
+    {
+      "code": "IN-NT-0001",
+      "name": "Income",
+      "natureCode": "IN"
+    },
+    {
+      "code": "EX-NT-0001",
+      "name": "Expenses",
+      "natureCode": "EX"
+    }
+  ],
+  "heads": [
+    {
+      "code": "10100",
+      "name": "Fixed Asset",
+      "natureTypeCode": "AS-NT-0001"
+    },
+    {
+      "code": "10200",
+      "name": "Capital Work-in-Progress",
+      "natureTypeCode": "AS-NT-0001"
+    },
+    {
+      "code": "10300",
+      "name": "Investment Property",
+      "natureTypeCode": "AS-NT-0001"
+    },
+    {
+      "code": "10400",
+      "name": "Non-Current Investments",
+      "natureTypeCode": "AS-NT-0001"
+    },
+    {
+      "code": "10500",
+      "name": "Non-Current Financial Assets",
+      "natureTypeCode": "AS-NT-0001"
+    },
+    {
+      "code": "10600",
+      "name": "Deferred Tax Assets",
+      "natureTypeCode": "AS-NT-0001"
+    },
+    {
+      "code": "10700",
+      "name": "Other Non-Current Assets",
+      "natureTypeCode": "AS-NT-0001"
+    },
+    {
+      "code": "10800",
+      "name": "Inventories",
+      "natureTypeCode": "AS-NT-0002",
+      "isLocked": true
+    },
+    {
+      "code": "10900",
+      "name": "Current Investments",
+      "natureTypeCode": "AS-NT-0002"
+    },
+    {
+      "code": "11000",
+      "name": "Trade Receivables",
+      "natureTypeCode": "AS-NT-0002",
+      "isLocked": true
+    },
+    {
+      "code": "11100",
+      "name": "Cash & Cash Equivalents",
+      "natureTypeCode": "AS-NT-0002",
+      "isLocked": true
+    },
+    {
+      "code": "11200",
+      "name": "Bank Balances",
+      "natureTypeCode": "AS-NT-0002",
+      "isLocked": true
+    },
+    {
+      "code": "11300",
+      "name": "Loans & Advances - Current",
+      "natureTypeCode": "AS-NT-0002"
+    },
+    {
+      "code": "11400",
+      "name": "Other Current Financial Assets",
+      "natureTypeCode": "AS-NT-0002"
+    },
+    {
+      "code": "11500",
+      "name": "Other Current Assets",
+      "natureTypeCode": "AS-NT-0002"
+    },
+    {
+      "code": "20100",
+      "name": "Long-Term Borrowings",
+      "natureTypeCode": "LI-NT-0001"
+    },
+    {
+      "code": "20200",
+      "name": "Non-Current Lease Liabilities",
+      "natureTypeCode": "LI-NT-0001"
+    },
+    {
+      "code": "20300",
+      "name": "Other Non-Current Financial Liabilities",
+      "natureTypeCode": "LI-NT-0001"
+    },
+    {
+      "code": "20400",
+      "name": "Non-Current Provisions",
+      "natureTypeCode": "LI-NT-0001"
+    },
+    {
+      "code": "20500",
+      "name": "Deferred Tax Liabilities",
+      "natureTypeCode": "LI-NT-0001"
+    },
+    {
+      "code": "20600",
+      "name": "Other Non-Current Liabilities",
+      "natureTypeCode": "LI-NT-0001"
+    },
+    {
+      "code": "20700",
+      "name": "Short-Term Borrowings",
+      "natureTypeCode": "LI-NT-0002"
+    },
+    {
+      "code": "20800",
+      "name": "Current Lease Liabilities",
+      "natureTypeCode": "LI-NT-0002"
+    },
+    {
+      "code": "20900",
+      "name": "Trade Payables",
+      "natureTypeCode": "LI-NT-0002",
+      "isLocked": true
+    },
+    {
+      "code": "21000",
+      "name": "Other Current Financial Liabilities",
+      "natureTypeCode": "LI-NT-0002"
+    },
+    {
+      "code": "21100",
+      "name": "Other Current Liabilities",
+      "natureTypeCode": "LI-NT-0002"
+    },
+    {
+      "code": "21200",
+      "name": "Current Provisions",
+      "natureTypeCode": "LI-NT-0002"
+    },
+    {
+      "code": "21300",
+      "name": "Current Tax Liabilities",
+      "natureTypeCode": "LI-NT-0002",
+      "isLocked": true
+    },
+    {
+      "code": "30100",
+      "name": "Equity Share Capital",
+      "natureTypeCode": "EQ-NT-0001"
+    },
+    {
+      "code": "30200",
+      "name": "Other Equity",
+      "natureTypeCode": "EQ-NT-0001"
+    },
+    {
+      "code": "30300",
+      "name": "Retained Earnings",
+      "natureTypeCode": "EQ-NT-0001",
+      "isLocked": true
+    },
+    {
+      "code": "40100",
+      "name": "Revenue from Operations",
+      "natureTypeCode": "IN-NT-0001"
+    },
+    {
+      "code": "40200",
+      "name": "Other Income",
+      "natureTypeCode": "IN-NT-0001"
+    },
+    {
+      "code": "50100",
+      "name": "Cost of Materials Consumed",
+      "natureTypeCode": "EX-NT-0001"
+    },
+    {
+      "code": "50200",
+      "name": "Purchases of Stock-in-Trade",
+      "natureTypeCode": "EX-NT-0001"
+    },
+    {
+      "code": "50300",
+      "name": "Changes in Inventories",
+      "natureTypeCode": "EX-NT-0001"
+    },
+    {
+      "code": "50400",
+      "name": "Employee Benefits Expense",
+      "natureTypeCode": "EX-NT-0001"
+    },
+    {
+      "code": "50500",
+      "name": "Finance Costs",
+      "natureTypeCode": "EX-NT-0001"
+    },
+    {
+      "code": "50600",
+      "name": "Depreciation & Amortisation Expense",
+      "natureTypeCode": "EX-NT-0001"
+    },
+    {
+      "code": "50700",
+      "name": "Other Expenses",
+      "natureTypeCode": "EX-NT-0001"
+    }
+  ],
+  "groups": [
+    {
+      "code": "10101",
+      "name": "Tangible Assets",
+      "headCode": "10100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "10102",
+      "name": "Intangible Assets",
+      "headCode": "10100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "10103",
+      "name": "Right-of-Use Assets",
+      "headCode": "10100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "10501",
+      "name": "Loans - Non-Current",
+      "headCode": "10500",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "10502",
+      "name": "Other Financial Assets - Non-Current",
+      "headCode": "10500",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "10801",
+      "name": "Pharmacy Stock",
+      "headCode": "10800",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "10802",
+      "name": "Stock Adjustments",
+      "headCode": "10800",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "10803",
+      "name": "Stores & Packing Materials",
+      "headCode": "10800",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "11001",
+      "name": "Trade Receivables - Considered Good",
+      "headCode": "11000",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "11002",
+      "name": "Trade Receivables - Credit Impaired",
+      "headCode": "11000",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "11201",
+      "name": "Current Accounts",
+      "headCode": "11200",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "11202",
+      "name": "Digital Wallets & Gateways",
+      "headCode": "11200",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "11203",
+      "name": "Deposit Accounts",
+      "headCode": "11200",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "11501",
+      "name": "Tax Receivables",
+      "headCode": "11500",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "11502",
+      "name": "Prepayments",
+      "headCode": "11500",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "20101",
+      "name": "Secured Borrowings - Non-Current",
+      "headCode": "20100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "20102",
+      "name": "Unsecured Borrowings - Non-Current",
+      "headCode": "20100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "20701",
+      "name": "Secured Borrowings - Current",
+      "headCode": "20700",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "20702",
+      "name": "Unsecured Borrowings - Current",
+      "headCode": "20700",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "20901",
+      "name": "Dues to Micro & Small Enterprises",
+      "headCode": "20900",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "20902",
+      "name": "Dues to Creditors Other than Micro & Small Enterprises",
+      "headCode": "20900",
+      "groupType": "PRIMARY",
+      "isLocked": true
+    },
+    {
+      "code": "21101",
+      "name": "Statutory Dues",
+      "headCode": "21100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "21102",
+      "name": "Employee Dues",
+      "headCode": "21100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "21103",
+      "name": "Customer Obligations",
+      "headCode": "21100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "21301",
+      "name": "GST Payable",
+      "headCode": "21300",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "21302",
+      "name": "Income Tax",
+      "headCode": "21300",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "30201",
+      "name": "Reserves & Surplus",
+      "headCode": "30200",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "30202",
+      "name": "Owner Accounts",
+      "headCode": "30200",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "40101",
+      "name": "Pharmacy Sales",
+      "headCode": "40100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "40102",
+      "name": "Institutional Sales",
+      "headCode": "40100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "40103",
+      "name": "Sales Adjustments",
+      "headCode": "40100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "40104",
+      "name": "Other Operating Revenue",
+      "headCode": "40100",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50201",
+      "name": "Purchases",
+      "headCode": "50200",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50202",
+      "name": "Purchase Adjustments",
+      "headCode": "50200",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50401",
+      "name": "Salaries & Wages",
+      "headCode": "50400",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50402",
+      "name": "Statutory Contributions",
+      "headCode": "50400",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50403",
+      "name": "Staff Welfare",
+      "headCode": "50400",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50701",
+      "name": "Establishment Expenses",
+      "headCode": "50700",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50702",
+      "name": "Administrative Expenses",
+      "headCode": "50700",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50703",
+      "name": "Selling & Distribution Expenses",
+      "headCode": "50700",
+      "groupType": "NORMAL",
+      "isLocked": true
+    },
+    {
+      "code": "50704",
+      "name": "Losses & Write-offs",
+      "headCode": "50700",
+      "groupType": "NORMAL",
+      "isLocked": true
+    }
+  ],
+  "subGroups": [
+    {
+      "code": "1010101",
+      "name": "Land",
+      "groupCode": "10101",
+      "isLocked": true
+    },
+    {
+      "code": "1010102",
+      "name": "Buildings",
+      "groupCode": "10101",
+      "isLocked": true
+    },
+    {
+      "code": "1010103",
+      "name": "Plant & Machinery",
+      "groupCode": "10101",
+      "isLocked": true
+    },
+    {
+      "code": "1010104",
+      "name": "Furniture & Fixtures",
+      "groupCode": "10101",
+      "isLocked": true
+    },
+    {
+      "code": "1010105",
+      "name": "Office Equipment",
+      "groupCode": "10101",
+      "isLocked": true
+    },
+    {
+      "code": "1010106",
+      "name": "Computers & IT Equipment",
+      "groupCode": "10101",
+      "isLocked": true
+    },
+    {
+      "code": "1010107",
+      "name": "Vehicles",
+      "groupCode": "10101",
+      "isLocked": true
+    },
+    {
+      "code": "1010108",
+      "name": "Accumulated Depreciation - Tangible",
+      "groupCode": "10101",
+      "isLocked": true
+    },
+    {
+      "code": "1010201",
+      "name": "Acquired Intangibles",
+      "groupCode": "10102",
+      "isLocked": true
+    },
+    {
+      "code": "1010202",
+      "name": "Accumulated Amortisation - Intangible",
+      "groupCode": "10102",
+      "isLocked": true
+    }
+  ],
+  "ledgers": [
+    {
+      "code": "101010101",
+      "name": "Freehold Land",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010101",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010102",
+      "name": "Leasehold Land",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010101",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010103",
+      "name": "Land - Assets under Lease",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010101",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010104",
+      "name": "Land Development Cost",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010101",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010201",
+      "name": "Factory Buildings",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010102",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010202",
+      "name": "Office Buildings",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010102",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010203",
+      "name": "Residential Buildings / Staff Quarters",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010102",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010204",
+      "name": "Leasehold Improvements",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010102",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010205",
+      "name": "Buildings - Assets under Lease",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010102",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010301",
+      "name": "Plant & Machinery",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010302",
+      "name": "Cold Storage & Refrigeration Units",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010103",
+      "openingBalanceType": "DR",
+      "description": "Temperature-controlled storage for vaccines and other cold-chain stock."
+    },
+    {
+      "code": "101010303",
+      "name": "Laboratory Equipment",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010304",
+      "name": "Electrical Installations",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010305",
+      "name": "Plant & Machinery - Assets under Lease",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010401",
+      "name": "Furniture & Fixtures",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010104",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010402",
+      "name": "Storage Racks & Shelving",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010104",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010403",
+      "name": "Display Counters",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010104",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010501",
+      "name": "Office Equipment",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010105",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010502",
+      "name": "Air Conditioning Equipment",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010105",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010503",
+      "name": "Security & Surveillance Equipment",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010105",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010601",
+      "name": "Computers & Laptops",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010106",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010602",
+      "name": "Servers & Network Equipment",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010106",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010603",
+      "name": "Point of Sale Terminals",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010106",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010604",
+      "name": "Barcode & Label Printers",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010106",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010701",
+      "name": "Motor Vehicles",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010107",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010702",
+      "name": "Delivery Vehicles",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010107",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010703",
+      "name": "Vehicles - Assets under Lease",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010107",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101010801",
+      "name": "Accumulated Depreciation - Buildings",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010108",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101010802",
+      "name": "Accumulated Depreciation - Plant & Machinery",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010108",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101010803",
+      "name": "Accumulated Depreciation - Furniture & Fixtures",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010108",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101010804",
+      "name": "Accumulated Depreciation - Office Equipment",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010108",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101010805",
+      "name": "Accumulated Depreciation - Computers & IT Equipment",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010108",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101010806",
+      "name": "Accumulated Depreciation - Vehicles",
+      "headCode": "10100",
+      "groupCode": "10101",
+      "subGroupCode": "1010108",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101020101",
+      "name": "Goodwill",
+      "headCode": "10100",
+      "groupCode": "10102",
+      "subGroupCode": "1010201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101020102",
+      "name": "Software Licences",
+      "headCode": "10100",
+      "groupCode": "10102",
+      "subGroupCode": "1010201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101020103",
+      "name": "Trademarks & Brands",
+      "headCode": "10100",
+      "groupCode": "10102",
+      "subGroupCode": "1010201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101020104",
+      "name": "Drug Licences & Permits",
+      "headCode": "10100",
+      "groupCode": "10102",
+      "subGroupCode": "1010201",
+      "openingBalanceType": "DR",
+      "description": "Capitalised cost of retail drug licences and statutory permits."
+    },
+    {
+      "code": "101020105",
+      "name": "Non-Compete Fees",
+      "headCode": "10100",
+      "groupCode": "10102",
+      "subGroupCode": "1010201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101020201",
+      "name": "Accumulated Amortisation - Software Licences",
+      "headCode": "10100",
+      "groupCode": "10102",
+      "subGroupCode": "1010202",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101020202",
+      "name": "Accumulated Amortisation - Trademarks & Brands",
+      "headCode": "10100",
+      "groupCode": "10102",
+      "subGroupCode": "1010202",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101020203",
+      "name": "Accumulated Amortisation - Drug Licences & Permits",
+      "headCode": "10100",
+      "groupCode": "10102",
+      "subGroupCode": "1010202",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "101030001",
+      "name": "Right-of-Use Asset - Buildings",
+      "headCode": "10100",
+      "groupCode": "10103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101030002",
+      "name": "Right-of-Use Asset - Plant & Machinery",
+      "headCode": "10100",
+      "groupCode": "10103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101030003",
+      "name": "Right-of-Use Asset - Vehicles",
+      "headCode": "10100",
+      "groupCode": "10103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "101030004",
+      "name": "Accumulated Depreciation - Right-of-Use Assets",
+      "headCode": "10100",
+      "groupCode": "10103",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "102000001",
+      "name": "Buildings under Construction",
+      "headCode": "10200",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "102000002",
+      "name": "Plant & Machinery under Installation",
+      "headCode": "10200",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "102000003",
+      "name": "Capital Advances - Projects",
+      "headCode": "10200",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "102000004",
+      "name": "Intangible Assets under Development",
+      "headCode": "10200",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "103000001",
+      "name": "Investment Property - Land",
+      "headCode": "10300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "103000002",
+      "name": "Investment Property - Buildings",
+      "headCode": "10300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "103000003",
+      "name": "Accumulated Depreciation - Investment Property",
+      "headCode": "10300",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "104000001",
+      "name": "Investment in Equity Instruments",
+      "headCode": "10400",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "104000002",
+      "name": "Investment in Mutual Funds - Non-Current",
+      "headCode": "10400",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "104000003",
+      "name": "Investment in Subsidiaries & Associates",
+      "headCode": "10400",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "104000004",
+      "name": "Investment in Government Securities",
+      "headCode": "10400",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "105010001",
+      "name": "Loans to Employees - Non-Current",
+      "headCode": "10500",
+      "groupCode": "10501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "105010002",
+      "name": "Loans to Related Parties - Non-Current",
+      "headCode": "10500",
+      "groupCode": "10501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "105020001",
+      "name": "Security Deposits - Rent",
+      "headCode": "10500",
+      "groupCode": "10502",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "105020002",
+      "name": "Security Deposits - Utilities",
+      "headCode": "10500",
+      "groupCode": "10502",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "105020003",
+      "name": "Bank Deposits over 12 Months",
+      "headCode": "10500",
+      "groupCode": "10502",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "105020004",
+      "name": "Interest Accrued on Deposits - Non-Current",
+      "headCode": "10500",
+      "groupCode": "10502",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "106000001",
+      "name": "Deferred Tax Asset",
+      "headCode": "10600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "107000001",
+      "name": "Capital Advances",
+      "headCode": "10700",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "107000002",
+      "name": "Prepaid Expenses - Non-Current",
+      "headCode": "10700",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "107000003",
+      "name": "Deferred Revenue Expenditure",
+      "headCode": "10700",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108010001",
+      "name": "Inventory - Pharmacy Stock",
+      "headCode": "10800",
+      "groupCode": "10801",
+      "openingBalanceType": "DR",
+      "isDefault": true,
+      "description": "Carrying value of pharmacy stock. Moved only by accounting events that consume the authoritative inventory cost from the stock ledger."
+    },
+    {
+      "code": "108010002",
+      "name": "Inventory - Prescription Medicines",
+      "headCode": "10800",
+      "groupCode": "10801",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108010003",
+      "name": "Inventory - OTC Medicines",
+      "headCode": "10800",
+      "groupCode": "10801",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108010004",
+      "name": "Inventory - Surgical & Consumables",
+      "headCode": "10800",
+      "groupCode": "10801",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108010005",
+      "name": "Inventory - Medical Devices",
+      "headCode": "10800",
+      "groupCode": "10801",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108010006",
+      "name": "Inventory - Cosmetics & Wellness",
+      "headCode": "10800",
+      "groupCode": "10801",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108010007",
+      "name": "Inventory - Baby & Nutrition",
+      "headCode": "10800",
+      "groupCode": "10801",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108020001",
+      "name": "Goods in Transit",
+      "headCode": "10800",
+      "groupCode": "10802",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108020002",
+      "name": "Stock at Branches",
+      "headCode": "10800",
+      "groupCode": "10802",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108020003",
+      "name": "Stock with Third Parties",
+      "headCode": "10800",
+      "groupCode": "10802",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108020004",
+      "name": "Provision for Expired Stock",
+      "headCode": "10800",
+      "groupCode": "10802",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "108020005",
+      "name": "Provision for Slow Moving Stock",
+      "headCode": "10800",
+      "groupCode": "10802",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "108030001",
+      "name": "Packing Materials",
+      "headCode": "10800",
+      "groupCode": "10803",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "108030002",
+      "name": "Stores & Spares",
+      "headCode": "10800",
+      "groupCode": "10803",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "109000001",
+      "name": "Current Investments - Mutual Funds",
+      "headCode": "10900",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "109000002",
+      "name": "Current Investments - Others",
+      "headCode": "10900",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "110010001",
+      "name": "Trade Receivables - Patients",
+      "headCode": "11000",
+      "groupCode": "11001",
+      "openingBalanceType": "DR",
+      "isDefault": true,
+      "description": "Patient and walk-in credit receivables."
+    },
+    {
+      "code": "110010002",
+      "name": "Trade Receivables - Institutions",
+      "headCode": "11000",
+      "groupCode": "11001",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "110010003",
+      "name": "Trade Receivables - Insurance / TPA",
+      "headCode": "11000",
+      "groupCode": "11001",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "110010004",
+      "name": "Trade Receivables - Corporate Clients",
+      "headCode": "11000",
+      "groupCode": "11001",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "110010005",
+      "name": "Trade Receivables - Government Schemes",
+      "headCode": "11000",
+      "groupCode": "11001",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "110010006",
+      "name": "Trade Receivables - Related Parties",
+      "headCode": "11000",
+      "groupCode": "11001",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "110020001",
+      "name": "Trade Receivables - Doubtful",
+      "headCode": "11000",
+      "groupCode": "11002",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "110020002",
+      "name": "Allowance for Expected Credit Loss",
+      "headCode": "11000",
+      "groupCode": "11002",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "111000001",
+      "name": "Cash in Hand",
+      "headCode": "11100",
+      "openingBalanceType": "DR",
+      "isDefault": true,
+      "description": "Counter cash."
+    },
+    {
+      "code": "111000002",
+      "name": "Petty Cash",
+      "headCode": "11100",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "111000003",
+      "name": "Cash at Counter - Branch",
+      "headCode": "11100",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "111000004",
+      "name": "Cheques on Hand",
+      "headCode": "11100",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "111000005",
+      "name": "Cash in Transit",
+      "headCode": "11100",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112010001",
+      "name": "Bank Account",
+      "headCode": "11200",
+      "groupCode": "11201",
+      "openingBalanceType": "DR",
+      "isDefault": true,
+      "description": "Operating bank account."
+    },
+    {
+      "code": "112010002",
+      "name": "Bank Account - Collections",
+      "headCode": "11200",
+      "groupCode": "11201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112010003",
+      "name": "Bank Account - Payments",
+      "headCode": "11200",
+      "groupCode": "11201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112010004",
+      "name": "Bank Account - Payroll",
+      "headCode": "11200",
+      "groupCode": "11201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112020001",
+      "name": "UPI Settlement Account",
+      "headCode": "11200",
+      "groupCode": "11202",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112020002",
+      "name": "Card Settlement Receivable",
+      "headCode": "11200",
+      "groupCode": "11202",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112020003",
+      "name": "Payment Gateway Receivable",
+      "headCode": "11200",
+      "groupCode": "11202",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112020004",
+      "name": "Wallet Settlement Account",
+      "headCode": "11200",
+      "groupCode": "11202",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112030001",
+      "name": "Short-Term Bank Deposits",
+      "headCode": "11200",
+      "groupCode": "11203",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "112030002",
+      "name": "Margin Money Deposits",
+      "headCode": "11200",
+      "groupCode": "11203",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "113000001",
+      "name": "Advances to Employees",
+      "headCode": "11300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "113000002",
+      "name": "Advances to Suppliers",
+      "headCode": "11300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "113000003",
+      "name": "Loans to Related Parties - Current",
+      "headCode": "11300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "114000001",
+      "name": "Interest Accrued but Not Due",
+      "headCode": "11400",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "114000002",
+      "name": "Security Deposits - Current",
+      "headCode": "11400",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "114000003",
+      "name": "Receivable from Related Parties",
+      "headCode": "11400",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "114000004",
+      "name": "Insurance Claims Receivable",
+      "headCode": "11400",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115010001",
+      "name": "Input GST Receivable",
+      "headCode": "11500",
+      "groupCode": "11501",
+      "openingBalanceType": "DR",
+      "isDefault": true,
+      "description": "Recoverable input tax. Held as a current asset rather than netted into the tax liability head, so the balance sheet does not present a receivable as a negative liability."
+    },
+    {
+      "code": "115010002",
+      "name": "Input CGST",
+      "headCode": "11500",
+      "groupCode": "11501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115010003",
+      "name": "Input SGST",
+      "headCode": "11500",
+      "groupCode": "11501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115010004",
+      "name": "Input IGST",
+      "headCode": "11500",
+      "groupCode": "11501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115010005",
+      "name": "GST Cash Ledger Balance",
+      "headCode": "11500",
+      "groupCode": "11501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115010006",
+      "name": "TDS Receivable",
+      "headCode": "11500",
+      "groupCode": "11501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115010007",
+      "name": "TCS Receivable",
+      "headCode": "11500",
+      "groupCode": "11501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115010008",
+      "name": "Advance Income Tax",
+      "headCode": "11500",
+      "groupCode": "11501",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115020001",
+      "name": "Prepaid Rent",
+      "headCode": "11500",
+      "groupCode": "11502",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115020002",
+      "name": "Prepaid Insurance",
+      "headCode": "11500",
+      "groupCode": "11502",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115020003",
+      "name": "Prepaid Licences & Subscriptions",
+      "headCode": "11500",
+      "groupCode": "11502",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "115020004",
+      "name": "Prepaid Expenses - Others",
+      "headCode": "11500",
+      "groupCode": "11502",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "201010001",
+      "name": "Term Loan from Banks",
+      "headCode": "20100",
+      "groupCode": "20101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "201010002",
+      "name": "Term Loan from Financial Institutions",
+      "headCode": "20100",
+      "groupCode": "20101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "201010003",
+      "name": "Vehicle Loans",
+      "headCode": "20100",
+      "groupCode": "20101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "201010004",
+      "name": "Equipment Loans",
+      "headCode": "20100",
+      "groupCode": "20101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "201020001",
+      "name": "Loans from Directors",
+      "headCode": "20100",
+      "groupCode": "20102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "201020002",
+      "name": "Loans from Related Parties - Non-Current",
+      "headCode": "20100",
+      "groupCode": "20102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "201020003",
+      "name": "Loans from Others - Non-Current",
+      "headCode": "20100",
+      "groupCode": "20102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "202000001",
+      "name": "Lease Liability - Buildings (Non-Current)",
+      "headCode": "20200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "202000002",
+      "name": "Lease Liability - Plant & Machinery (Non-Current)",
+      "headCode": "20200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "202000003",
+      "name": "Lease Liability - Vehicles (Non-Current)",
+      "headCode": "20200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "203000001",
+      "name": "Security Deposits Received",
+      "headCode": "20300",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "203000002",
+      "name": "Retention Money Payable",
+      "headCode": "20300",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "204000001",
+      "name": "Provision for Gratuity",
+      "headCode": "20400",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "204000002",
+      "name": "Provision for Leave Encashment",
+      "headCode": "20400",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "204000003",
+      "name": "Provision for Employee Benefits - Others",
+      "headCode": "20400",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "205000001",
+      "name": "Deferred Tax Liability",
+      "headCode": "20500",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "206000001",
+      "name": "Deferred Government Grants",
+      "headCode": "20600",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "206000002",
+      "name": "Deferred Revenue - Non-Current",
+      "headCode": "20600",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "207010001",
+      "name": "Cash Credit from Banks",
+      "headCode": "20700",
+      "groupCode": "20701",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "207010002",
+      "name": "Bank Overdraft",
+      "headCode": "20700",
+      "groupCode": "20701",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "207010003",
+      "name": "Working Capital Loan",
+      "headCode": "20700",
+      "groupCode": "20701",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "207010004",
+      "name": "Current Maturities of Long-Term Debt",
+      "headCode": "20700",
+      "groupCode": "20701",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "207020001",
+      "name": "Short-Term Loans from Directors",
+      "headCode": "20700",
+      "groupCode": "20702",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "207020002",
+      "name": "Short-Term Loans from Related Parties",
+      "headCode": "20700",
+      "groupCode": "20702",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "208000001",
+      "name": "Lease Liability - Buildings (Current)",
+      "headCode": "20800",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "208000002",
+      "name": "Lease Liability - Plant & Machinery (Current)",
+      "headCode": "20800",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "208000003",
+      "name": "Lease Liability - Vehicles (Current)",
+      "headCode": "20800",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "209010001",
+      "name": "Trade Payables - MSME Suppliers",
+      "headCode": "20900",
+      "groupCode": "20901",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "209010002",
+      "name": "Interest Payable to MSME Suppliers",
+      "headCode": "20900",
+      "groupCode": "20901",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "209020001",
+      "name": "Trade Payables - Suppliers",
+      "headCode": "20900",
+      "groupCode": "20902",
+      "openingBalanceType": "CR",
+      "isDefault": true,
+      "description": "Supplier payables, presented under the non-MSME dues sub-group."
+    },
+    {
+      "code": "209020002",
+      "name": "Trade Payables - Distributors",
+      "headCode": "20900",
+      "groupCode": "20902",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "209020003",
+      "name": "Trade Payables - Related Parties",
+      "headCode": "20900",
+      "groupCode": "20902",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "209020004",
+      "name": "Trade Payables - Services",
+      "headCode": "20900",
+      "groupCode": "20902",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "209020005",
+      "name": "Goods Received Not Invoiced",
+      "headCode": "20900",
+      "groupCode": "20902",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "210000001",
+      "name": "Interest Accrued but Not Due on Borrowings",
+      "headCode": "21000",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "210000002",
+      "name": "Unpaid Dividends",
+      "headCode": "21000",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "210000003",
+      "name": "Payable for Capital Goods",
+      "headCode": "21000",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "210000004",
+      "name": "Creditors for Expenses",
+      "headCode": "21000",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211010001",
+      "name": "TDS Payable",
+      "headCode": "21100",
+      "groupCode": "21101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211010002",
+      "name": "TCS Payable",
+      "headCode": "21100",
+      "groupCode": "21101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211010003",
+      "name": "Provident Fund Payable",
+      "headCode": "21100",
+      "groupCode": "21101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211010004",
+      "name": "ESI Payable",
+      "headCode": "21100",
+      "groupCode": "21101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211010005",
+      "name": "Professional Tax Payable",
+      "headCode": "21100",
+      "groupCode": "21101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211010006",
+      "name": "Labour Welfare Fund Payable",
+      "headCode": "21100",
+      "groupCode": "21101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211020001",
+      "name": "Salaries & Wages Payable",
+      "headCode": "21100",
+      "groupCode": "21102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211020002",
+      "name": "Bonus Payable",
+      "headCode": "21100",
+      "groupCode": "21102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211020003",
+      "name": "Employee Reimbursements Payable",
+      "headCode": "21100",
+      "groupCode": "21102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211030001",
+      "name": "Advance from Customers",
+      "headCode": "21100",
+      "groupCode": "21103",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211030002",
+      "name": "Customer Credit Notes Payable",
+      "headCode": "21100",
+      "groupCode": "21103",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211030003",
+      "name": "Loyalty Points Liability",
+      "headCode": "21100",
+      "groupCode": "21103",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "211030004",
+      "name": "Gift Voucher Liability",
+      "headCode": "21100",
+      "groupCode": "21103",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "212000001",
+      "name": "Provision for Expenses",
+      "headCode": "21200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "212000002",
+      "name": "Provision for Gratuity - Current",
+      "headCode": "21200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "212000003",
+      "name": "Provision for Leave Encashment - Current",
+      "headCode": "21200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "212000004",
+      "name": "Provision for Warranty & Returns",
+      "headCode": "21200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "213010001",
+      "name": "Output GST Payable",
+      "headCode": "21300",
+      "groupCode": "21301",
+      "openingBalanceType": "CR",
+      "isDefault": true,
+      "description": "Output tax collected on dispensing."
+    },
+    {
+      "code": "213010002",
+      "name": "Output CGST Payable",
+      "headCode": "21300",
+      "groupCode": "21301",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "213010003",
+      "name": "Output SGST Payable",
+      "headCode": "21300",
+      "groupCode": "21301",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "213010004",
+      "name": "Output IGST Payable",
+      "headCode": "21300",
+      "groupCode": "21301",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "213010005",
+      "name": "GST Payable under Reverse Charge",
+      "headCode": "21300",
+      "groupCode": "21301",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "213010006",
+      "name": "GST Late Fee & Interest Payable",
+      "headCode": "21300",
+      "groupCode": "21301",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "213020001",
+      "name": "Provision for Income Tax",
+      "headCode": "21300",
+      "groupCode": "21302",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "213020002",
+      "name": "Income Tax Payable",
+      "headCode": "21300",
+      "groupCode": "21302",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "301000001",
+      "name": "Equity Share Capital",
+      "headCode": "30100",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "301000002",
+      "name": "Owner A Share Capital",
+      "headCode": "30100",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "301000003",
+      "name": "Owner B Share Capital",
+      "headCode": "30100",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "301000004",
+      "name": "Share Application Money Pending Allotment",
+      "headCode": "30100",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "302010001",
+      "name": "Securities Premium",
+      "headCode": "30200",
+      "groupCode": "30201",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "302010002",
+      "name": "General Reserve",
+      "headCode": "30200",
+      "groupCode": "30201",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "302010003",
+      "name": "Capital Reserve",
+      "headCode": "30200",
+      "groupCode": "30201",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "302010004",
+      "name": "Capital Redemption Reserve",
+      "headCode": "30200",
+      "groupCode": "30201",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "302010005",
+      "name": "Revaluation Reserve",
+      "headCode": "30200",
+      "groupCode": "30201",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "302020001",
+      "name": "Owner A Current Account",
+      "headCode": "30200",
+      "groupCode": "30202",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "302020002",
+      "name": "Owner B Current Account",
+      "headCode": "30200",
+      "groupCode": "30202",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "302020003",
+      "name": "Drawings",
+      "headCode": "30200",
+      "groupCode": "30202",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "303000001",
+      "name": "Retained Earnings",
+      "headCode": "30300",
+      "openingBalanceType": "CR",
+      "isDefault": true
+    },
+    {
+      "code": "303000002",
+      "name": "Profit & Loss - Current Year",
+      "headCode": "30300",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "303000003",
+      "name": "Opening Balance Equity",
+      "headCode": "30300",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401010001",
+      "name": "Sales",
+      "headCode": "40100",
+      "groupCode": "40101",
+      "openingBalanceType": "CR",
+      "isLocked": true,
+      "isDefault": true,
+      "description": "Default revenue account for dispensing and counter sales."
+    },
+    {
+      "code": "401010002",
+      "name": "Sales - Prescription Medicines",
+      "headCode": "40100",
+      "groupCode": "40101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401010003",
+      "name": "Sales - OTC Medicines",
+      "headCode": "40100",
+      "groupCode": "40101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401010004",
+      "name": "Sales - Surgical & Consumables",
+      "headCode": "40100",
+      "groupCode": "40101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401010005",
+      "name": "Sales - Medical Devices",
+      "headCode": "40100",
+      "groupCode": "40101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401010006",
+      "name": "Sales - Cosmetics & Wellness",
+      "headCode": "40100",
+      "groupCode": "40101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401010007",
+      "name": "Sales - Baby & Nutrition",
+      "headCode": "40100",
+      "groupCode": "40101",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401020001",
+      "name": "Sales - Institutional",
+      "headCode": "40100",
+      "groupCode": "40102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401020002",
+      "name": "Sales - Insurance / TPA",
+      "headCode": "40100",
+      "groupCode": "40102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401020003",
+      "name": "Sales - Government Schemes",
+      "headCode": "40100",
+      "groupCode": "40102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401020004",
+      "name": "Sales - Wholesale & Distribution",
+      "headCode": "40100",
+      "groupCode": "40102",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401030001",
+      "name": "Sales Returns",
+      "headCode": "40100",
+      "groupCode": "40103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "401030002",
+      "name": "Sales Discounts",
+      "headCode": "40100",
+      "groupCode": "40103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "401030003",
+      "name": "Trade Discount Allowed",
+      "headCode": "40100",
+      "groupCode": "40103",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "401040001",
+      "name": "Consultation & Service Income",
+      "headCode": "40100",
+      "groupCode": "40104",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401040002",
+      "name": "Delivery & Handling Charges",
+      "headCode": "40100",
+      "groupCode": "40104",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "401040003",
+      "name": "Scheme & Incentive Income from Suppliers",
+      "headCode": "40100",
+      "groupCode": "40104",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "402000001",
+      "name": "Other Income",
+      "headCode": "40200",
+      "openingBalanceType": "CR",
+      "isDefault": true
+    },
+    {
+      "code": "402000002",
+      "name": "Interest Income",
+      "headCode": "40200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "402000003",
+      "name": "Dividend Income",
+      "headCode": "40200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "402000004",
+      "name": "Rental Income",
+      "headCode": "40200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "402000005",
+      "name": "Rounding Off Income",
+      "headCode": "40200",
+      "openingBalanceType": "CR",
+      "description": "Credit side of invoice rounding."
+    },
+    {
+      "code": "402000006",
+      "name": "Foreign Exchange Gain",
+      "headCode": "40200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "402000007",
+      "name": "Profit on Sale of Fixed Assets",
+      "headCode": "40200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "402000008",
+      "name": "Liabilities Written Back",
+      "headCode": "40200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "402000009",
+      "name": "Insurance Claim Received",
+      "headCode": "40200",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "501000001",
+      "name": "COGS",
+      "headCode": "50100",
+      "openingBalanceType": "DR",
+      "isLocked": true,
+      "isDefault": true,
+      "description": "Cost of goods sold, valued from the stock ledger at the moment of dispensing."
+    },
+    {
+      "code": "501000002",
+      "name": "Cost of Materials Consumed",
+      "headCode": "50100",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "501000003",
+      "name": "Packing Material Consumed",
+      "headCode": "50100",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "502010001",
+      "name": "Purchases",
+      "headCode": "50200",
+      "groupCode": "50201",
+      "openingBalanceType": "DR",
+      "isLocked": true,
+      "isDefault": true,
+      "description": "Default purchase account for supplier invoices."
+    },
+    {
+      "code": "502010002",
+      "name": "Purchases - Prescription Medicines",
+      "headCode": "50200",
+      "groupCode": "50201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "502010003",
+      "name": "Purchases - OTC Medicines",
+      "headCode": "50200",
+      "groupCode": "50201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "502010004",
+      "name": "Purchases - Surgical & Consumables",
+      "headCode": "50200",
+      "groupCode": "50201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "502010005",
+      "name": "Purchases - Medical Devices",
+      "headCode": "50200",
+      "groupCode": "50201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "502010006",
+      "name": "Purchases - Cosmetics & Wellness",
+      "headCode": "50200",
+      "groupCode": "50201",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "502020001",
+      "name": "Purchase Returns",
+      "headCode": "50200",
+      "groupCode": "50202",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "502020002",
+      "name": "Purchase Discounts",
+      "headCode": "50200",
+      "groupCode": "50202",
+      "openingBalanceType": "CR"
+    },
+    {
+      "code": "502020003",
+      "name": "Freight Inward",
+      "headCode": "50200",
+      "groupCode": "50202",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "502020004",
+      "name": "Customs & Import Duty",
+      "headCode": "50200",
+      "groupCode": "50202",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "502020005",
+      "name": "Purchases under Reverse Charge",
+      "headCode": "50200",
+      "groupCode": "50202",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "503000001",
+      "name": "Changes in Inventories of Stock-in-Trade",
+      "headCode": "50300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "503000002",
+      "name": "Expired Stock Written Off",
+      "headCode": "50300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "503000003",
+      "name": "Damaged & Breakage Loss",
+      "headCode": "50300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "503000004",
+      "name": "Stock Shortage & Shrinkage",
+      "headCode": "50300",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504010001",
+      "name": "Salaries & Wages",
+      "headCode": "50400",
+      "groupCode": "50401",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504010002",
+      "name": "Pharmacist Salaries",
+      "headCode": "50400",
+      "groupCode": "50401",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504010003",
+      "name": "Bonus & Incentives",
+      "headCode": "50400",
+      "groupCode": "50401",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504010004",
+      "name": "Overtime Wages",
+      "headCode": "50400",
+      "groupCode": "50401",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504010005",
+      "name": "Leave Encashment Expense",
+      "headCode": "50400",
+      "groupCode": "50401",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504020001",
+      "name": "Provident Fund Contribution",
+      "headCode": "50400",
+      "groupCode": "50402",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504020002",
+      "name": "ESI Contribution",
+      "headCode": "50400",
+      "groupCode": "50402",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504020003",
+      "name": "Gratuity Expense",
+      "headCode": "50400",
+      "groupCode": "50402",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504020004",
+      "name": "Labour Welfare Fund Contribution",
+      "headCode": "50400",
+      "groupCode": "50402",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504030001",
+      "name": "Staff Welfare Expenses",
+      "headCode": "50400",
+      "groupCode": "50403",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504030002",
+      "name": "Staff Training & Development",
+      "headCode": "50400",
+      "groupCode": "50403",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504030003",
+      "name": "Staff Uniform Expenses",
+      "headCode": "50400",
+      "groupCode": "50403",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "504030004",
+      "name": "Recruitment Expenses",
+      "headCode": "50400",
+      "groupCode": "50403",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "505000001",
+      "name": "Interest on Term Loans",
+      "headCode": "50500",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "505000002",
+      "name": "Interest on Working Capital",
+      "headCode": "50500",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "505000003",
+      "name": "Interest on Lease Liabilities",
+      "headCode": "50500",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "505000004",
+      "name": "Interest to MSME Suppliers",
+      "headCode": "50500",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "505000005",
+      "name": "Bank Charges",
+      "headCode": "50500",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "505000006",
+      "name": "Payment Gateway Charges",
+      "headCode": "50500",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "505000007",
+      "name": "Other Borrowing Costs",
+      "headCode": "50500",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "506000001",
+      "name": "Depreciation on Buildings",
+      "headCode": "50600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "506000002",
+      "name": "Depreciation on Plant & Machinery",
+      "headCode": "50600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "506000003",
+      "name": "Depreciation on Furniture & Fixtures",
+      "headCode": "50600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "506000004",
+      "name": "Depreciation on Office Equipment",
+      "headCode": "50600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "506000005",
+      "name": "Depreciation on Computers & IT Equipment",
+      "headCode": "50600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "506000006",
+      "name": "Depreciation on Vehicles",
+      "headCode": "50600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "506000007",
+      "name": "Depreciation on Right-of-Use Assets",
+      "headCode": "50600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "506000008",
+      "name": "Amortisation of Intangible Assets",
+      "headCode": "50600",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507010001",
+      "name": "Rent",
+      "headCode": "50700",
+      "groupCode": "50701",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507010002",
+      "name": "Rates & Taxes",
+      "headCode": "50700",
+      "groupCode": "50701",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507010003",
+      "name": "Electricity & Power",
+      "headCode": "50700",
+      "groupCode": "50701",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507010004",
+      "name": "Water Charges",
+      "headCode": "50700",
+      "groupCode": "50701",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507010005",
+      "name": "Repairs & Maintenance - Buildings",
+      "headCode": "50700",
+      "groupCode": "50701",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507010006",
+      "name": "Repairs & Maintenance - Plant & Machinery",
+      "headCode": "50700",
+      "groupCode": "50701",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507010007",
+      "name": "Repairs & Maintenance - Others",
+      "headCode": "50700",
+      "groupCode": "50701",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507010008",
+      "name": "Insurance",
+      "headCode": "50700",
+      "groupCode": "50701",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507020001",
+      "name": "Miscellaneous Expenses",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR",
+      "isDefault": true,
+      "description": "Catch-all for indirect costs that no more specific account covers. This is what a head-target mapping on Other Expenses resolves to."
+    },
+    {
+      "code": "507020002",
+      "name": "Printing & Stationery",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507020003",
+      "name": "Telephone & Internet",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507020004",
+      "name": "Postage & Courier",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507020005",
+      "name": "Legal & Professional Fees",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507020006",
+      "name": "Audit Fees",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507020007",
+      "name": "Licence & Registration Fees",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507020008",
+      "name": "Software Subscription Charges",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507020009",
+      "name": "Office Expenses",
+      "headCode": "50700",
+      "groupCode": "50702",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507030001",
+      "name": "Advertisement & Publicity",
+      "headCode": "50700",
+      "groupCode": "50703",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507030002",
+      "name": "Sales Promotion Expenses",
+      "headCode": "50700",
+      "groupCode": "50703",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507030003",
+      "name": "Discount Allowed",
+      "headCode": "50700",
+      "groupCode": "50703",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507030004",
+      "name": "Freight Outward",
+      "headCode": "50700",
+      "groupCode": "50703",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507030005",
+      "name": "Travelling & Conveyance",
+      "headCode": "50700",
+      "groupCode": "50703",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507030006",
+      "name": "Business Promotion",
+      "headCode": "50700",
+      "groupCode": "50703",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507040001",
+      "name": "Bad Debts Written Off",
+      "headCode": "50700",
+      "groupCode": "50704",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507040002",
+      "name": "Provision for Doubtful Debts",
+      "headCode": "50700",
+      "groupCode": "50704",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507040003",
+      "name": "Loss on Sale of Fixed Assets",
+      "headCode": "50700",
+      "groupCode": "50704",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507040004",
+      "name": "Foreign Exchange Loss",
+      "headCode": "50700",
+      "groupCode": "50704",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507040005",
+      "name": "Rounding Off Expense",
+      "headCode": "50700",
+      "groupCode": "50704",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507040006",
+      "name": "Donations & CSR Expenditure",
+      "headCode": "50700",
+      "groupCode": "50704",
+      "openingBalanceType": "DR"
+    },
+    {
+      "code": "507040007",
+      "name": "Penalties & Fines",
+      "headCode": "50700",
+      "groupCode": "50704",
+      "openingBalanceType": "DR"
+    }
+  ],
+  "defaultMappings": [
+    {
+      "type": "CUSTOMER",
+      "target": "HEAD",
+      "code": "11000"
+    },
+    {
+      "type": "VENDOR",
+      "target": "HEAD",
+      "code": "20900"
+    },
+    {
+      "type": "SALES",
+      "target": "LEDGER",
+      "code": "401010001"
+    },
+    {
+      "type": "PURCHASE",
+      "target": "LEDGER",
+      "code": "502010001"
+    },
+    {
+      "type": "CASH",
+      "target": "HEAD",
+      "code": "11100"
+    },
+    {
+      "type": "BANK",
+      "target": "HEAD",
+      "code": "11200"
+    },
+    {
+      "type": "TAX",
+      "target": "HEAD",
+      "code": "21300"
+    },
+    {
+      "type": "ROUNDING",
+      "target": "LEDGER",
+      "code": "402000005"
+    },
+    {
+      "type": "DISCOUNT",
+      "target": "HEAD",
+      "code": "50700"
+    },
+    {
+      "type": "DIRECT_COST",
+      "target": "LEDGER",
+      "code": "501000001"
+    },
+    {
+      "type": "INDIRECT_COST",
+      "target": "HEAD",
+      "code": "50700"
+    },
+    {
+      "type": "INVENTORY",
+      "target": "HEAD",
+      "code": "10800"
+    },
+    {
+      "type": "OTHER",
+      "target": "LEDGER",
+      "code": "507020001"
+    },
+    {
+      "type": "INPUT_TAX",
+      "target": "LEDGER",
+      "code": "115010001"
+    },
+    {
+      "type": "OUTPUT_TAX",
+      "target": "LEDGER",
+      "code": "213010001"
+    }
+  ]
+}

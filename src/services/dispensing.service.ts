@@ -24,6 +24,10 @@ import {
 import { StockMovementInput, assertBatchIssuable, recordStockMovements } from './inventory.service';
 import { deliverNotifications, notifyingTransaction } from './notification.service';
 import { notifyDispensingCompleted } from './notificationEvents.service';
+import {
+  autoPostDocumentAccounting,
+  autoPostPaymentAccounting,
+} from './accounting/autoPost.service';
 
 export interface DispensingLineInput {
   productId: string;
@@ -188,6 +192,18 @@ export async function createDispensing(auth: AuthContext, input: CreateDispensin
       totals.total,
       document.lineItems.length
     );
+
+    // The patient receipt is booked by the sale below, not as a payment in its own
+    // right; this records that on the payment so it does not read as unposted.
+    await autoPostPaymentAccounting(tx, auth, payment.id);
+
+    // Dispensing is COMPLETED the moment it is created, so this is its
+    // finalisation, and it raises two entries: the sale and the cost of the goods
+    // sold. The cost comes from the stock movements written a few lines above, at
+    // the batch cost the inventory service recorded - never from the selling
+    // price. Both commit with the sale, because a sale whose cost never reached
+    // the books reports its whole selling price as margin.
+    await autoPostDocumentAccounting(tx, auth, document.id, DocumentType.DISPENSING);
 
     return document.id;
   }, deliverNotifications);

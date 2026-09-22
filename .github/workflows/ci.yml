@@ -48,6 +48,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      # The database-free half of the suite: the double-entry rules, the decimal
+      # arithmetic and the reporting-format validation. The integration tests are
+      # deliberately excluded - they need a real Postgres, and CI has only the
+      # placeholder URL above. They run locally via `npm test`, and the seeded
+      # end-to-end reconciliation runs via `npm run verify:accounting`.
+      - name: Unit tests
+        run: npm run test:unit
+
       - name: Upload build output
         uses: actions/upload-artifact@v4
         with:

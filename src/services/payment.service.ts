@@ -1,4 +1,10 @@
-import { DocumentStatus, DocumentType, PaymentMethod, Prisma } from '@prisma/client';
+import {
+  AccountingStatus,
+  DocumentStatus,
+  DocumentType,
+  PaymentMethod,
+  Prisma,
+} from '@prisma/client';
 import { prisma, transaction } from '../database/prisma';
 import { AuthContext } from '../context/authContext';
 import { badRequest, conflict, forbidden, notFound } from '../utils/errors';
@@ -6,7 +12,8 @@ import { money, ZERO } from '../utils/decimal';
 import { generatePaymentNumber } from '../utils/documentNumber';
 import { AuditAction, logDocumentAction } from './audit.service';
 import { assertBranchAccess, assertSupplierInCompany } from './authorization.service';
-import { computeInvoiceFinancials } from './supplierInvoice.service';
+import { computeInvoiceFinancials } from './invoiceFinancials';
+import { autoPostPaymentAccounting } from './accounting/autoPost.service';
 import { deliverNotifications, notifyingTransaction } from './notification.service';
 import { notifyPaymentAllocated } from './notificationEvents.service';
 import { Pagination, pageMeta, paginate } from '../schemas/common';
@@ -43,6 +50,9 @@ function serializePayment(payment: {
   paymentDate: Date;
   reference: string | null;
   notes: string | null;
+  accountingStatus: AccountingStatus;
+  accountingMessage: string | null;
+  accountingPostedAt: Date | null;
   allocations?: { id: string; allocatedAmount: Prisma.Decimal; document?: unknown }[];
 }) {
   const allocated = (payment.allocations ?? []).reduce<Prisma.Decimal>(
@@ -58,6 +68,13 @@ function serializePayment(payment: {
       ...a,
       allocatedAmount: a.allocatedAmount.toFixed(2),
     })),
+    // Mirrors the document shape, so the payment page can show the same accounting
+    // status and the same retry affordance without a second contract.
+    accounting: {
+      status: payment.accountingStatus,
+      message: payment.accountingMessage,
+      postedAt: payment.accountingPostedAt,
+    },
   };
 }
 
@@ -90,6 +107,12 @@ export async function createPayment(auth: AuthContext, input: CreatePaymentInput
     if (input.allocations?.length) {
       await applyAllocations(tx, auth, payment.id, input.allocations);
     }
+
+    // Booked for what the payment settles, not for what it is worth. A payment
+    // created without allocations settles nothing yet and is left PENDING until
+    // an allocation gives it a liability to clear.
+    await autoPostPaymentAccounting(tx, auth, payment.id);
+
     return payment.id;
   }, deliverNotifications);
 
@@ -224,6 +247,11 @@ export async function allocatePayment(
       await assertBranchAccess(auth, payment.branchId, tx);
     }
     await applyAllocations(tx, auth, paymentId, allocations);
+
+    // Allocating is what turns a payment into a settlement of supplier liability,
+    // so it is the accounting event. A payment already booked is topped up by the
+    // increment rather than posted again.
+    await autoPostPaymentAccounting(tx, auth, paymentId);
   }, deliverNotifications);
 
   return getPayment(auth, paymentId);

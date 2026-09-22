@@ -1,4 +1,10 @@
-import { DocumentLinkType, DocumentStatus, DocumentType, Prisma } from '@prisma/client';
+import {
+  AccountingStatus,
+  DocumentLinkType,
+  DocumentStatus,
+  DocumentType,
+  Prisma,
+} from '@prisma/client';
 import { prisma } from '../database/prisma';
 import { AuthContext } from '../context/authContext';
 import { conflict, forbidden, notFound } from '../utils/errors';
@@ -358,6 +364,9 @@ type DocumentHeader = {
   supplierRef: string | null;
   patientRef: string | null;
   prescriptionRef: string | null;
+  accountingStatus: AccountingStatus;
+  accountingMessage: string | null;
+  accountingPostedAt: Date | null;
   createdAt: Date;
 };
 
@@ -370,6 +379,17 @@ export function serializeDocumentHeader<T extends DocumentHeader>(doc: T) {
     paidAmount: doc.paidAmount.toFixed(2),
     balanceAmount: doc.balanceAmount.toFixed(2),
     disputedAmount: doc.disputedAmount.toFixed(2),
+    /**
+     * Where the document stands with the books, as one object rather than three
+     * loose fields, so a client reads a status and its reason together. POSTED
+     * has a journal behind it; PENDING and FAILED carry the reason and are
+     * retryable; SKIPPED and NOT_REQUIRED are answers, not gaps.
+     */
+    accounting: {
+      status: doc.accountingStatus,
+      message: doc.accountingMessage,
+      postedAt: doc.accountingPostedAt,
+    },
   };
 }
 

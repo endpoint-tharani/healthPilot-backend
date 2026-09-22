@@ -125,3 +125,103 @@ enum NotificationEntityType {
   PRODUCT
   BATCH
 }
+
+/* ------------------------------------------------------------- accounting ---- */
+
+/** Debit or credit. Used for ledger opening balances and report presentation. */
+enum BalanceType {
+  DR
+  CR
+}
+
+/**
+ * Ind AS groups are either an ordinary caption (NORMAL) or the primary caption a
+ * head presents under, which is what carries sub-groups (PRIMARY).
+ */
+enum AccountGroupType {
+  NORMAL
+  PRIMARY
+}
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+  REVERSED
+}
+
+/**
+ * The business event a journal was raised for. One event per source document is
+ * enforced by the unique key on (companyId, sourceEventKey), so a retried posting
+ * is refused by the database rather than by a check that could race.
+ */
+enum AccountingEvent {
+  SUPPLIER_INVOICE
+  SUPPLIER_PAYMENT
+  CREDIT_NOTE
+  SALES
+  COGS
+  MANUAL
+  REVERSAL
+}
+
+/** What a journal was raised against: a document, or a payment (which is not one). */
+enum JournalSourceType {
+  DOCUMENT
+  PAYMENT
+  MANUAL
+}
+
+/**
+ * The account roles a posting resolves by name. The first thirteen are the Ind AS
+ * template's own default mappings and are never renamed. INPUT_TAX and OUTPUT_TAX
+ * extend them: the template's single TAX role nets recoverable input tax against
+ * output tax in one liability head, which balances but presents an asset as a
+ * negative liability. Companies that do not configure them fall back to TAX.
+ */
+enum AccountMappingType {
+  CUSTOMER
+  VENDOR
+  SALES
+  PURCHASE
+  CASH
+  BANK
+  TAX
+  ROUNDING
+  DISCOUNT
+  DIRECT_COST
+  INDIRECT_COST
+  INVENTORY
+  OTHER
+  INPUT_TAX
+  OUTPUT_TAX
+}
+
+/** A mapping points at a head (resolved to its default ledger) or a ledger directly. */
+enum AccountMappingTarget {
+  HEAD
+  LEDGER
+}
+
+/**
+ * Where a business event stands with the books.
+ *
+ * Carried on the source row rather than derived from "does a journal exist",
+ * because the three answers that are not POSTED are different from each other and
+ * a missing journal cannot tell them apart. A stock transfer has NOT_REQUIRED, a
+ * credit note that cleared value the books never recognised is SKIPPED, and an
+ * invoice raised by a tenant whose chart of accounts has not been initialised is
+ * PENDING - recoverable, visible, and retryable. Only the last of those is a
+ * problem, and only it should be shown as one.
+ *
+ * FAILED exists for a posting that was attempted and refused. Under the atomic
+ * path it is unreachable: the business document rolls back with its journal, so
+ * there is nothing left to mark. It is reachable from a manual retry, which runs
+ * on its own and records why it did not succeed.
+ */
+enum AccountingStatus {
+  NOT_REQUIRED
+  PENDING
+  POSTED
+  SKIPPED
+  FAILED
+}

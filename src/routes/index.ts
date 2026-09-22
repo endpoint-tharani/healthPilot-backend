@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateUser } from '../middleware/authenticateUser';
 
+import accountingRoutes from './accounting.routes';
 import authRoutes from './auth.routes';
 import branchRoutes from './branch.routes';
 import creditNoteRoutes from './creditNote.routes';
@@ -43,5 +44,6 @@ apiRouter.use('/dispensing', dispensingRoutes);
 apiRouter.use('/inventory', inventoryRoutes);
 apiRouter.use('/documents', documentRoutes);
 apiRouter.use('/notifications', notificationRoutes);
+apiRouter.use('/accounting', accountingRoutes);
 
 export default apiRouter;

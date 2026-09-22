@@ -11,7 +11,7 @@ import { fail } from './response';
  */
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
   if (err instanceof AppError) {
-    return fail(res, err.status, err.message, err.details);
+    return fail(res, err.status, err.message, err.details, err.code);
   }
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {

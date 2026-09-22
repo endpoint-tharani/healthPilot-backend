@@ -18,6 +18,9 @@ model Branch {
   inventoryTransactions      InventoryTransaction[]
   payments                   Payment[]
   notifications              Notification[]
+  accountMappings            AccountMapping[]
+  journalEntries             JournalEntry[]
+  journalLines               JournalLine[]
 
   @@unique([companyId, code])
   @@index([companyId])

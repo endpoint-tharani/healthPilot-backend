@@ -1,0 +1,21 @@
+/** Optional third level, beneath a PRIMARY group (LI-0001-0001-0002, ...). */
+model AccountSubGroup {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  code      String
+  name      String
+  groupId   String
+  group     AccountGroup @relation(fields: [groupId], references: [id])
+  isLocked  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ledgers Ledger[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([groupId])
+}

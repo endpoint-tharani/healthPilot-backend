@@ -1,0 +1,8 @@
+{
+  "templateKey": "IND_AS",
+  "appliesToVersion": "2.0.0",
+  "description": "Empty by design. The overlay existed because the earlier Ind AS format was a presentation hierarchy that declared captions such as Inventories, Trade Receivables and Trade payables without any postable account beneath them, and editing a vendor file other systems read was the wrong fix. The 2.0.0 chart is authored for HealthPilot rather than adopted wholesale, so those accounts - pharmacy stock, patient receivables, supplier payables, cash, bank, input and output GST - and the INPUT_TAX and OUTPUT_TAX roles are declared in the base template itself. The file and the merge in resolveTemplate stay so a future deployment can add its own accounts without forking the format again.",
+  "ledgers": [],
+  "defaultLedgers": [],
+  "additionalMappings": []
+}

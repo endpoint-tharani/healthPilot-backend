@@ -15,6 +15,10 @@ export const AuditAction = {
   CREDIT_APPLIED: 'CREDIT_APPLIED',
   /** A supplier invoice was re-valued because the accepted quantity behind it changed. */
   DISPUTE_RECALCULATED: 'DISPUTE_RECALCULATED',
+  /** A journal entry was raised for this document. */
+  ACCOUNTING_POSTED: 'ACCOUNTING_POSTED',
+  /** A journal entry raised for this document was reversed by a correcting entry. */
+  ACCOUNTING_REVERSED: 'ACCOUNTING_REVERSED',
 } as const;
 
 export type AuditActionValue = (typeof AuditAction)[keyof typeof AuditAction];

@@ -1,0 +1,36 @@
+/**
+ * Resolves a posting role (SALES, INVENTORY, BANK, ...) to the account it should
+ * hit, so no business service ever names a ledger code. Ledger 4101 is Sales in
+ * the shipped template and nowhere in the code.
+ *
+ * branchId is optional and is the override: a row with a branch wins over the
+ * company-wide row for the same role, which is how one branch can settle into its
+ * own bank account without a second chart of accounts.
+ */
+model AccountMapping {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  /** Null is the company-wide default; a branch row overrides it for that branch. */
+  branchId    String?
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+  /**
+   * branchId with the company-wide case spelled out as '*'. Postgres treats NULLs
+   * in a unique constraint as distinct, so a key over branchId directly would let
+   * a company-wide mapping be inserted twice and make seeding non-idempotent. The
+   * service always derives this from branchId; nothing else sets it.
+   */
+  scopeKey    String   @default("*")
+  mappingType AccountMappingType
+  target      AccountMappingTarget
+  headId      String?
+  head        AccountHead? @relation(fields: [headId], references: [id])
+  ledgerId    String?
+  ledger      Ledger?  @relation(fields: [ledgerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, scopeKey, mappingType])
+  @@index([companyId])
+  @@index([branchId])
+}

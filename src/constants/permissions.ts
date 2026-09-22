@@ -47,6 +47,13 @@ export const Permission = {
   DISPENSING_VIEW: 'DISPENSING_VIEW',
 
   INVENTORY_VIEW: 'INVENTORY_VIEW',
+
+  /** Read the chart of accounts, journals and the financial reports. */
+  ACCOUNTING_VIEW: 'ACCOUNTING_VIEW',
+  /** Raise accounting entries, and reverse them. Never edits a posted journal. */
+  ACCOUNTING_POST: 'ACCOUNTING_POST',
+  /** Initialise the chart of accounts and maintain its mappings. */
+  ACCOUNTING_MANAGE: 'ACCOUNTING_MANAGE',
   DOCUMENT_VIEW: 'DOCUMENT_VIEW',
   AUDIT_VIEW: 'AUDIT_VIEW',
 } as const;
@@ -89,6 +96,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionValue[]> = {
     Permission.STOCK_TRANSFER_VIEW,
     Permission.STOCK_TRANSFER_DISPATCH,
     Permission.STOCK_TRANSFER_RECEIVE,
+    Permission.ACCOUNTING_VIEW,
+    Permission.ACCOUNTING_POST,
     Permission.AUDIT_VIEW,
   ],
   BRANCH_MANAGER: [
@@ -100,6 +109,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, PermissionValue[]> = {
     Permission.STOCK_TRANSFER_RECEIVE,
     Permission.DISPENSING_CREATE,
     Permission.DISPENSING_VIEW,
+    Permission.ACCOUNTING_VIEW,
     Permission.AUDIT_VIEW,
   ],
   PHARMACIST: [

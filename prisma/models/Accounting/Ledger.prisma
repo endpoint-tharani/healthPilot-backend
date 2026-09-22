@@ -1,0 +1,48 @@
+/**
+ * A postable account. Every journal line points at one of these; nothing posts to
+ * a head, a group or a nature directly.
+ *
+ * The head is always present because the reporting hierarchy has to reach the
+ * ledger from a caption even when the template defines no group for it. group and
+ * subGroup are optional and, when set, must belong to that same head - the
+ * service enforces it, since a chart where a ledger's group disagrees with its
+ * head would report one figure under two captions.
+ *
+ * isDefault picks the ledger a head-target account mapping resolves to. Without
+ * it, a head carrying several ledgers (two bank accounts under AS-0013) would
+ * make "post the payment to BANK" ambiguous, and an implicit rule such as lowest
+ * code wins would quietly move money the day a second account is opened.
+ */
+model Ledger {
+  id                 String   @id @default(uuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id])
+  /** Numeric template code, validated against the nature's range (4101, 5101, ...). */
+  code               String
+  name               String
+  headId             String
+  head               AccountHead @relation(fields: [headId], references: [id])
+  groupId            String?
+  group              AccountGroup? @relation(fields: [groupId], references: [id])
+  subGroupId         String?
+  subGroup           AccountSubGroup? @relation(fields: [subGroupId], references: [id])
+  openingBalanceType BalanceType @default(DR)
+  openingBalance     Decimal  @default(0) @db.Decimal(14, 2)
+  /** Resolves head-target mappings. At most one per head; enforced in the service. */
+  isDefault          Boolean  @default(false)
+  isLocked           Boolean  @default(false)
+  isActive           Boolean  @default(true)
+  description        String?
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  journalLines JournalLine[]
+  mappings     AccountMapping[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([headId])
+  @@index([groupId])
+  @@index([subGroupId])
+}

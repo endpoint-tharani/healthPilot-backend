@@ -3,6 +3,15 @@ model Company {
   code      String   @unique
   name      String
   isActive  Boolean  @default(true)
+  /**
+   * The reporting format this tenant's chart of accounts was initialised from.
+   * Null means accounting has not been initialised for the company yet, which is
+   * why every accounting read is allowed to return an empty chart rather than an
+   * error: a pharmacy tenant created before accounting existed is not broken.
+   */
+  accountingTemplateKey     String?
+  accountingTemplateVersion String?
+  accountingInitializedAt   DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -17,4 +26,13 @@ model Company {
   payments              Payment[]
   documentLogs          DocumentLog[]
   notifications         Notification[]
+
+  accountNatures     AccountNature[]
+  accountNatureTypes AccountNatureType[]
+  accountHeads       AccountHead[]
+  accountGroups      AccountGroup[]
+  accountSubGroups   AccountSubGroup[]
+  ledgers            Ledger[]
+  accountMappings    AccountMapping[]
+  journalEntries     JournalEntry[]
 }

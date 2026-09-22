@@ -1,0 +1,30 @@
+/**
+ * A Schedule III / Ind AS balance sheet or P&L caption (AS-0009 Inventories,
+ * LI-0006 Trade payables, IN-0001 Revenue from Operations, ...).
+ *
+ * isLocked marks a head the reporting format depends on. Locked masters are
+ * refused for rename and delete, because a report that resolves captions by code
+ * silently changes meaning if one is edited underneath it.
+ */
+model AccountHead {
+  id            String   @id @default(uuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  code          String
+  name          String
+  natureTypeId  String
+  natureType    AccountNatureType @relation(fields: [natureTypeId], references: [id])
+  isLocked      Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  groups   AccountGroup[]
+  ledgers  Ledger[]
+  mappings AccountMapping[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([natureTypeId])
+}

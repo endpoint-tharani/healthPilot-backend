@@ -25,6 +25,16 @@ model Document {
   supplierRef          String?
   patientRef           String?
   prescriptionRef      String?
+  /**
+   * Where this document stands with the books. Written by the accounting posting
+   * path inside the same transaction as the journal, so the two can never
+   * disagree: a document reading POSTED has a journal, and one reading PENDING
+   * does not and says why.
+   */
+  accountingStatus     AccountingStatus @default(NOT_REQUIRED)
+  /** Why the status is what it is. The reason a PENDING or FAILED row shows. */
+  accountingMessage    String?
+  accountingPostedAt   DateTime?
   createdById          String
   createdBy            User           @relation("DocCreatedBy", fields: [createdById], references: [id])
   createdAt            DateTime       @default(now())
@@ -37,6 +47,7 @@ model Document {
   paymentAllocations    PaymentAllocation[]
   documentLogs          DocumentLog[]
   notifications         Notification[]
+  journalEntries        JournalEntry[]         @relation("JournalSourceDocument")
 
   @@unique([companyId, documentNumber])
   @@index([companyId, documentType])
@@ -44,4 +55,5 @@ model Document {
   @@index([sourceBranchId])
   @@index([destinationBranchId])
   @@index([status])
+  @@index([companyId, accountingStatus])
 }

@@ -12,10 +12,17 @@ export function okList(res: Response, data: unknown, meta: unknown) {
   return res.status(200).json({ success: true, data, meta });
 }
 
-export function fail(res: Response, status: number, message: string, errors?: unknown) {
+export function fail(
+  res: Response,
+  status: number,
+  message: string,
+  errors?: unknown,
+  code?: string
+) {
   return res.status(status).json({
     success: false,
     message,
+    ...(code ? { code } : {}),
     ...(errors ? { errors } : {}),
   });
 }
