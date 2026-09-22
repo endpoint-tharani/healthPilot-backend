@@ -22,6 +22,12 @@ jobs:
       # variable has to exist. Neither `prisma validate` nor `prisma generate`
       # opens a connection, so a placeholder is enough - no database is needed.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/healthpilot_ci
+      # The unit suite imports the accounting services, which reach config/env.ts
+      # through the logger, and that module refuses to load without a signing
+      # secret. CI has no .env, so one is supplied here. It is a throwaway that
+      # signs nothing: no token minted under it ever leaves the runner, and no
+      # deployment shares it. A real secret belongs in repository secrets.
+      JWT_SECRET: ci-unit-tests-only-not-a-real-signing-secret
 
     steps:
       - name: Checkout
